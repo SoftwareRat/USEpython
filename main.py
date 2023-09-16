@@ -49,11 +49,19 @@ USE_json = {
         },
         {
             "name": "Notepad++",
-            "enabled": False,
-            "url": '',
-            "path": os.path.join(base_temp_directory, 'npp.7.9.5.Installer.x64.exe'),
-            "install_command": f'{os.path.join(base_temp_directory, "npp.7.9.5.Installer.x64.exe")} /S',
+            "enabled": True,
+            "url": 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip',
+            "path": os.path.join(base_temp_directory, 'npp.portable.x64.zip'),
+            "install_command": None,
             "progress_message": 'Installing Notepad++'
+        },
+        {
+            "name": "VLC Media Player",
+            "enabled": True,
+            "url": 'https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip',
+            "path": os.path.join(base_temp_directory, 'vlc-win64.zip'),
+            "install_command": None,
+            "progress_message": 'Installing VLC Media Player'
         },
     ],
     "custom_binaries": [
@@ -136,5 +144,4 @@ def install_software():
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     install_software()
-    image_path = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
-    change_wallpaper(image_path)
+    change_wallpaper("C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg")
