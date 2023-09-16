@@ -28,7 +28,8 @@ USE_json = {
         "Explorer++": True,
         "7-Zip": True,
         "Notepad++": True,
-        "Regcool": True
+        "Regcool": True,
+        "VLC media player": False
     },
     "custom_binaries": {}
 }
