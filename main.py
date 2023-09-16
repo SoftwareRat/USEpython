@@ -69,8 +69,6 @@ def extract_zip(zip_path, extract_path):
         zip_ref.extractall(extract_path)
 
 def install_software():
-
-
     # Define the software installation commands and progress messages
     software_list = [
         ("Mozilla Firefox", 'https://download.mozilla.org/?product=firefox-latest-ssl&os=win64', os.path.join(base_temp_directory, 'FirefoxSetup.exe'), 'Installing Firefox'),
