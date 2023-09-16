@@ -2,7 +2,7 @@ import os
 import requests
 import subprocess
 import zipfile
-import json 
+import json
 from tqdm import tqdm
 import winreg as reg
 import ctypes
@@ -44,9 +44,7 @@ if not os.path.isfile("use_conf.json"):
     with open('use_conf.json', 'w') as json_file:
         json.dump(USE_json, json_file, indent=4)
 
-
 config = json.load(open('use_conf.json', 'r'))['default_binaries']
-
 
 def download_file_with_progress(url, save_path):
     response = requests.get(url, stream=True)
@@ -68,6 +66,33 @@ def extract_zip(zip_path, extract_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_path)
 
+def install(software_name, url, download_path, progress_message):
+    for name, download_approval in config[0].items():
+        if name == software_name and download_approval == False:
+            break
+    print(f"Downloading {software_name}...")
+    download_file_with_progress(url, download_path)
+    print(f"{software_name} downloaded successfully.")
+
+    # Install software
+    print(f"{progress_message}...")
+
+    # Extract ZIP archives to the installation directory
+    if download_path.endswith('.zip'):
+        extract_dir = os.path.join(base_install_directory, os.path.basename(download_path).replace('.zip', ''))
+        extract_zip(download_path, extract_dir)
+
+    # Run installation command
+    if not download_path.endswith('.zip'):
+        if software_name == "Mozilla Firefox":
+            install_command = f'{download_path} /InstallDirectoryPath={base_install_directory}\\Firefox'
+        elif software_name == "7-Zip":
+            install_command = f'{download_path} /S /D={base_install_directory}\\7-Zip'
+        else:
+            install_command = download_path
+        subprocess.run(install_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print(f"{software_name} installed successfully.")
+
 def install_software():
     # Define the software installation commands and progress messages
     software_list = [
@@ -82,47 +107,7 @@ def install_software():
     ]
 
     for software_name, url, download_path, progress_message in software_list:
-        for name, download_approval in config[0].items(): # This communicate with the config to decide wether or not user wants it
-            if name == software_name and download_approval == False:
-                break
-            print(f"Downloading {software_name}...")
-            download_file_with_progress(url, download_path)
-            print(f"{software_name} downloaded successfully.")
-
-            # Install software
-            print(f"{progress_message}...")
-
-            # Extract ZIP archives natively in Python
-            if download_path.endswith('.zip'):
-                extract_dir = os.path.dirname(download_path)
-                extract_zip(download_path, extract_dir)
-            
-            # Run installation command
-            if not download_path.endswith('.zip'):
-                subprocess.run(download_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            print(f"{software_name} installed successfully.")
-            print(f"Downloading {software_name}...")
-            download_file_with_progress(url, download_path)
-            print(f"{software_name} downloaded successfully.")
-
-            # Install software
-            print(f"{progress_message}...")
-            
-            # Extract ZIP archives to the installation directory
-            if download_path.endswith('.zip'):
-                extract_dir = os.path.join(base_install_directory, os.path.basename(download_path).replace('.zip', ''))
-                extract_zip(download_path, extract_dir)
-
-            # Run installation command
-            if not download_path.endswith('.zip'):
-                if software_name == "Mozilla Firefox":
-                    install_command = f'{download_path} /InstallDirectoryPath={base_install_directory}\\Firefox'
-                elif software_name == "7-Zip":
-                    install_command = f'{download_path} /S /D={base_install_directory}\\7-Zip'
-                else:
-                    install_command = download_path
-                subprocess.run(install_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        install(software_name, url, download_path, progress_message)
 
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
