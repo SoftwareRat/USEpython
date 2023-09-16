@@ -28,40 +28,35 @@ USE_json = {
             "enabled": True,
             "url": "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64",
             "path": os.path.join(base_temp_directory, 'FirefoxSetup.exe'),
-            "install_command": f'{os.path.join(base_temp_directory, "FirefoxSetup.exe")} /InstallDirectoryPath={os.path.join(base_install_directory, "Firefox")}',
-            "progress_message": 'Installing Firefox'
+            "install_command": f'{os.path.join(base_temp_directory, "FirefoxSetup.exe")} /InstallDirectoryPath={os.path.join(base_install_directory, "Firefox")}'
         },
         {
             "name": "Process Explorer",
             "enabled": True,
             "url": 'https://download.sysinternals.com/files/ProcessExplorer.zip',
             "path": os.path.join(base_temp_directory, 'ProcessExplorer.zip'),
-            "install_command": None,
-            "progress_message": 'Installing Process Explorer'
+            "install_command": None
         },
         {
             "name": "7-Zip",
             "enabled": True,
             "url": 'https://7-zip.org/a/7z2301-x64.exe',
             "path": os.path.join(base_temp_directory, '7z-x64.exe'),
-            "install_command": f'{os.path.join(base_temp_directory, "7z-x64.exe")} /S /D={os.path.join(base_install_directory, "7-Zip")}',
-            "progress_message": 'Installing 7-Zip'
+            "install_command": f'{os.path.join(base_temp_directory, "7z-x64.exe")} /S /D={os.path.join(base_install_directory, "7-Zip")}'
         },
         {
             "name": "Notepad++",
             "enabled": True,
             "url": 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip',
             "path": os.path.join(base_temp_directory, 'npp.portable.x64.zip'),
-            "install_command": None,
-            "progress_message": 'Installing Notepad++'
+            "install_command": None
         },
         {
             "name": "VLC Media Player",
             "enabled": True,
             "url": 'https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip',
             "path": os.path.join(base_temp_directory, 'vlc-win64.zip'),
-            "install_command": None,
-            "progress_message": 'Installing VLC Media Player'
+            "install_command": None
         },
     ],
     "custom_binaries": [
@@ -70,8 +65,7 @@ USE_json = {
             "enabled": False,
             "url": "https://example.com/custom-software1.zip",
             "path": os.path.join(base_temp_directory, 'custom-software1.zip'),
-            "install_command": None,
-            "progress_message": 'Installing Custom Software 1'
+            "install_command": None
         },
     ]
 }
@@ -107,12 +101,11 @@ def install(software):
     if not software["enabled"]:
         return
 
-    print(f"Downloading {software['name']}...")
-    download_file_with_progress(software['url'], software['path'])
-    print(f"{software['name']} downloaded successfully.")
-
-    # Install software
-    print(f"{software['progress_message']}...")
+    print(f"Installing {software['name']}...")
+    if software['url']:
+        print(f"Downloading {software['name']}...")
+        download_file_with_progress(software['url'], software['path'])
+        print(f"{software['name']} downloaded successfully.")
 
     # Extract ZIP archives to the installation directory
     if software['path'].endswith('.zip'):
@@ -120,7 +113,7 @@ def install(software):
         extract_zip(software['path'], extract_dir)
 
     # Run installation command
-    if software['install_command'] is not None:
+    if software['install_command']:
         subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     print(f"{software['name']} installed successfully.")
