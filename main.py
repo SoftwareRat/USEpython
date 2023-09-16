@@ -2,6 +2,7 @@ import os
 import requests
 import subprocess
 import zipfile
+import json 
 from tqdm import tqdm
 import winreg as reg
 import ctypes
@@ -18,6 +19,34 @@ def set_console_title(title):
 base_temp_directory = "C:\\UseTemp"
 base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
+
+# Structure of default JSON
+USE_json = {
+    "default_binaries" : [
+        {
+            "Mozilla Firefox" : True,
+            "Process Explorer" : True,
+            "Explorer++": True,
+            "7-Zip": True,
+            "Notepad++": True,
+            "Regcool": True
+        }
+    ],
+    "custom_binaries" : [
+        {
+
+        }
+    ]
+}
+
+# Checks for JSON config and generate default if missing
+if not os.path.isfile("use_conf.json"):
+    with open('use_conf.json', 'w') as json_file:
+        json.dump(USE_json, json_file, indent=4)
+
+
+config = json.load(open('use_conf.json', 'r'))['default_binaries']
+
 
 def download_file_with_progress(url, save_path):
     response = requests.get(url, stream=True)
@@ -40,6 +69,8 @@ def extract_zip(zip_path, extract_path):
         zip_ref.extractall(extract_path)
 
 def install_software():
+
+
     # Define the software installation commands and progress messages
     software_list = [
         ("Mozilla Firefox", 'https://download.mozilla.org/?product=firefox-latest-ssl&os=win64', os.path.join(base_temp_directory, 'FirefoxSetup.exe'), 'Installing Firefox'),
@@ -53,29 +84,44 @@ def install_software():
     ]
 
     for software_name, url, download_path, progress_message in software_list:
-        print(f"Downloading {software_name}...")
-        download_file_with_progress(url, download_path)
-        print(f"{software_name} downloaded successfully.")
+        for name, download_approval in config[0].items(): # This communicate with the config to decide wether or not user wants it
+            if name == software_name and download_approval == False:
+                break
+            print(f"Downloading {software_name}...")
+            download_file_with_progress(url, download_path)
+            print(f"{software_name} downloaded successfully.")
 
-        # Install software
-        print(f"{progress_message}...")
+            # Install software
+            print(f"{progress_message}...")
 
-        # Extract ZIP archives to the installation directory
-        if download_path.endswith('.zip'):
-            extract_dir = os.path.join(base_install_directory, os.path.basename(download_path).replace('.zip', ''))
-            extract_zip(download_path, extract_dir)
-        
-        # Run installation command
-        if not download_path.endswith('.zip'):
-            if software_name == "Mozilla Firefox":
-                install_command = f'{download_path} /InstallDirectoryPath={base_install_directory}\\Firefox'
-            elif software_name == "7-Zip":
-                install_command = f'{download_path} /S /D={base_install_directory}\\7-Zip'
-            else:
-                install_command = download_path
-            subprocess.run(install_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # Extract ZIP archives natively in Python
+            if download_path.endswith('.zip'):
+                extract_dir = os.path.dirname(download_path)
+                extract_zip(download_path, extract_dir)
+            
+            # Run installation command
+            if not download_path.endswith('.zip'):
+                subprocess.run(download_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        print(f"{software_name} installed successfully.")
+            print(f"{software_name} installed successfully.")
+            input()
+            print(f"Downloading {software_name}...")
+            download_file_with_progress(url, download_path)
+            print(f"{software_name} downloaded successfully.")
+
+            # Install software
+            print(f"{progress_message}...")
+
+            # Extract ZIP archives natively in Python
+            if download_path.endswith('.zip'):
+                extract_dir = os.path.dirname(download_path)
+                extract_zip(download_path, extract_dir)
+            
+            # Run installation command
+            if not download_path.endswith('.zip'):
+                subprocess.run(download_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            print(f"{software_name} installed successfully.")
 
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
