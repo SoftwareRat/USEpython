@@ -1,0 +1,33 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        pip install pyinstaller
+
+    - name: Build EXE
+      run: |
+        pyinstaller --onefile main # Replace 'your_script.py' with your script's filename
+
+    - name: Upload EXE
+      uses: actions/upload-artifact@v2
+      with:
+        name: USE
+        path: ./dist/  # Modify if your PyInstaller output folder is different
