@@ -24,7 +24,7 @@ jobs:
 
     - name: Build EXE
       run: |
-        pyinstaller --onefile main # Replace 'your_script.py' with your script's filename
+        pyinstaller --onefile main.py
 
     - name: Upload EXE
       uses: actions/upload-artifact@v2
