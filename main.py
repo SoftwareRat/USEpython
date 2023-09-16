@@ -55,7 +55,6 @@ USE_json = {
             "install_command": f'{os.path.join(base_temp_directory, "npp.7.9.5.Installer.x64.exe")} /S',
             "progress_message": 'Installing Notepad++'
         },
-
     ],
     "custom_binaries": [
         {
@@ -118,6 +117,18 @@ def install(software):
 
     print(f"{software['name']} installed successfully.")
 
+def change_wallpaper(image_path):
+    try:
+        # Set the wallpaper
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 3)
+
+        # Notify Windows of the change
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 2)
+
+        print(f"Desktop wallpaper set to '{image_path}' successfully.")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
 def install_software():
     for software in config['default_binaries'] + config['custom_binaries']:
         install(software)
@@ -125,3 +136,5 @@ def install_software():
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     install_software()
+    image_path = "C:\\path\\to\\your\\image.jpg"
+    change_wallpaper(image_path)
