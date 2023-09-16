@@ -22,16 +22,51 @@ create_folder(base_temp_directory, base_install_directory)
 
 # Structure of default JSON
 USE_json = {
-    "default_binaries": {
-        "Mozilla Firefox": True,
-        "Process Explorer": True,
-        "Explorer++": True,
-        "7-Zip": True,
-        "Notepad++": True,
-        "Regcool": True,
-        "VLC media player": False
-    },
-    "custom_binaries": {}
+    "default_binaries": [
+        {
+            "name": "Mozilla Firefox",
+            "enabled": True,
+            "url": "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64",
+            "path": os.path.join(base_temp_directory, 'FirefoxSetup.exe'),
+            "install_command": f'{os.path.join(base_temp_directory, "FirefoxSetup.exe")} /InstallDirectoryPath={os.path.join(base_install_directory, "Firefox")}',
+            "progress_message": 'Installing Firefox'
+        },
+        {
+            "name": "Process Explorer",
+            "enabled": True,
+            "url": 'https://download.sysinternals.com/files/ProcessExplorer.zip',
+            "path": os.path.join(base_temp_directory, 'ProcessExplorer.zip'),
+            "install_command": None,
+            "progress_message": 'Installing Process Explorer'
+        },
+        {
+            "name": "7-Zip",
+            "enabled": True,
+            "url": 'https://7-zip.org/a/7z2301-x64.exe',
+            "path": os.path.join(base_temp_directory, '7z-x64.exe'),
+            "install_command": f'{os.path.join(base_temp_directory, "7z-x64.exe")} /S /D={os.path.join(base_install_directory, "7-Zip")}',
+            "progress_message": 'Installing 7-Zip'
+        },
+        {
+            "name": "Notepad++",
+            "enabled": False,
+            "url": '',
+            "path": os.path.join(base_temp_directory, 'npp.7.9.5.Installer.x64.exe'),
+            "install_command": f'{os.path.join(base_temp_directory, "npp.7.9.5.Installer.x64.exe")} /S',
+            "progress_message": 'Installing Notepad++'
+        },
+
+    ],
+    "custom_binaries": [
+        {
+            "name": "Example Software 1",
+            "enabled": False,
+            "url": "https://example.com/custom-software1.zip",
+            "path": os.path.join(base_temp_directory, 'custom-software1.zip'),
+            "install_command": None,
+            "progress_message": 'Installing Custom Software 1'
+        },
+    ]
 }
 
 # Checks for JSON config and generate default if missing
@@ -39,7 +74,7 @@ if not os.path.isfile("use_conf.json"):
     with open('use_conf.json', 'w') as json_file:
         json.dump(USE_json, json_file, indent=4)
 
-config = json.load(open('use_conf.json', 'r'))['default_binaries']
+config = json.load(open('use_conf.json', 'r'))
 
 def download_file_with_progress(url, save_path):
     response = requests.get(url, stream=True)
@@ -61,50 +96,31 @@ def extract_zip(zip_path, extract_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_path)
 
-def install(software_name, url, download_path, progress_message):
-    download_approval = config.get(software_name, False)
-    if not download_approval:
-        print(f"Skipping {software_name} installation as it's not approved in the configuration.")
+def install(software):
+    if not software["enabled"]:
         return
 
-    print(f"Downloading {software_name}...")
-    download_file_with_progress(url, download_path)
-    print(f"{software_name} downloaded successfully.")
+    print(f"Downloading {software['name']}...")
+    download_file_with_progress(software['url'], software['path'])
+    print(f"{software['name']} downloaded successfully.")
 
     # Install software
-    print(f"{progress_message}...")
+    print(f"{software['progress_message']}...")
 
     # Extract ZIP archives to the installation directory
-    if download_path.endswith('.zip'):
-        extract_dir = os.path.join(base_install_directory, os.path.basename(download_path).replace('.zip', ''))
-        extract_zip(download_path, extract_dir)
+    if software['path'].endswith('.zip'):
+        extract_dir = os.path.join(base_install_directory, os.path.basename(software['path']).replace('.zip', ''))
+        extract_zip(software['path'], extract_dir)
 
     # Run installation command
-    if not download_path.endswith('.zip'):
-        if software_name == "Mozilla Firefox":
-            install_command = f'{download_path} /InstallDirectoryPath={base_install_directory}\\Firefox'
-        elif software_name == "7-Zip":
-            install_command = f'{download_path} /S /D={base_install_directory}\\7-Zip'
-        else:
-            install_command = download_path
-        subprocess.run(install_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print(f"{software_name} installed successfully.")
+    if software['install_command'] is not None:
+        subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    print(f"{software['name']} installed successfully.")
 
 def install_software():
-    # Define the software installation commands and progress messages
-    software_list = [
-        ("Mozilla Firefox", 'https://download.mozilla.org/?product=firefox-latest-ssl&os=win64', os.path.join(base_temp_directory, 'FirefoxSetup.exe'), 'Installing Firefox'),
-        ("Process Explorer", 'https://download.sysinternals.com/files/ProcessExplorer.zip', os.path.join(base_temp_directory, 'ProcessExplorer.zip'), 'Installing Process Explorer'),
-        ("Explorer++", 'https://github.com/derceg/explorerplusplus/releases/download/version-1.4.0-beta-2/explorerpp_x64.zip', os.path.join(base_temp_directory, 'explorerpp_x64.zip'), 'Installing Explorer++'),
-        # TODO: Auto-updating link
-        ("7-Zip", 'https://7-zip.org/a/7z2301-x64.exe', os.path.join(base_temp_directory, 'install7Zip.exe'), 'Installing 7-Zip'),
-        ("Notepad++", 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip', os.path.join(base_temp_directory, 'NotepadPlusPlus.zip'), 'Installing Notepad++'),
-        ("Regcool", 'https://kurtzimmermann.com/files/RegCoolX64.zip', os.path.join(base_temp_directory, 'RegCoolX64.zip'), 'Installing Regcool'),
-        ("VLC media player", 'https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip', os.path.join(base_temp_directory, 'vlc-win64.zip'), 'Installing VLC media player')        
-    ]
-
-    for software_name, url, download_path, progress_message in software_list:
-        install(software_name, url, download_path, progress_message)
+    for software in config['default_binaries'] + config['custom_binaries']:
+        install(software)
 
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
