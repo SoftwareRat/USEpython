@@ -4,15 +4,20 @@ import subprocess
 import zipfile
 from tqdm import tqdm
 import winreg as reg
+import ctypes
 
 # Function to create a folder if it doesn't exist
 def create_folder(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-# Define the base directory for temporary downloads
+def set_console_title(title):
+    ctypes.windll.kernel32.SetConsoleTitleW(title)
+
+# Define the directories for temporary downloads and software installation
 base_temp_directory = "C:\\UseTemp"
-create_folder(base_temp_directory)
+base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
+create_folder(base_temp_directory, base_install_directory)
 
 def download_file_with_progress(url, save_path):
     response = requests.get(url, stream=True)
@@ -43,7 +48,8 @@ def install_software():
         # TODO: Auto-updating link
         ("7-Zip", 'https://7-zip.org/a/7z2301-x64.exe', os.path.join(base_temp_directory, 'install7Zip.exe'), 'Installing 7-Zip'),
         ("Notepad++", 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip', os.path.join(base_temp_directory, 'NotepadPlusPlus.zip'), 'Installing Notepad++'),
-        ("Regcool", 'https://kurtzimmermann.com/files/RegCoolX64.zip', os.path.join(base_temp_directory, 'RegCoolX64.zip'), 'Installing Regcool')
+        ("Regcool", 'https://kurtzimmermann.com/files/RegCoolX64.zip', os.path.join(base_temp_directory, 'RegCoolX64.zip'), 'Installing Regcool'),
+        ("VLC media player", 'https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip', os.path.join(base_temp_directory, 'vlc-win64.zip'), 'Installing VLC media player')        
     ]
 
     for software_name, url, download_path, progress_message in software_list:
@@ -54,25 +60,23 @@ def install_software():
         # Install software
         print(f"{progress_message}...")
 
-        # Extract ZIP archives natively in Python
+        # Extract ZIP archives to the installation directory
         if download_path.endswith('.zip'):
-            extract_dir = os.path.dirname(download_path)
+            extract_dir = os.path.join(base_install_directory, os.path.basename(download_path).replace('.zip', ''))
             extract_zip(download_path, extract_dir)
         
         # Run installation command
         if not download_path.endswith('.zip'):
-            subprocess.run(download_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if software_name == "Mozilla Firefox":
+                install_command = f'{download_path} /InstallDirectoryPath={base_install_directory}\\Firefox'
+            elif software_name == "7-Zip":
+                install_command = f'{download_path} /S /D={base_install_directory}\\7-Zip'
+            else:
+                install_command = download_path
+            subprocess.run(install_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         print(f"{software_name} installed successfully.")
 
-    # Enabling Windows dark mode
-    try:
-        reg_key_path = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
-        with reg.OpenKey(reg.HKEY_CURRENT_USER, reg_key_path, 0, reg.KEY_WRITE) as key:
-            reg.SetValueEx(key, 'ListviewShadow', 0, reg.REG_DWORD, 1)
-        print("Registry key 'ListviewShadow' set successfully.")
-    except Exception as e:
-        print(f"Error setting the registry key: {str(e)}")
-
 if __name__ == "__main__":
+    set_console_title("Unauthorized Software Enabler by SoftwareRat")
     install_software()
