@@ -22,21 +22,15 @@ create_folder(base_temp_directory, base_install_directory)
 
 # Structure of default JSON
 USE_json = {
-    "default_binaries" : [
-        {
-            "Mozilla Firefox" : True,
-            "Process Explorer" : True,
-            "Explorer++": True,
-            "7-Zip": True,
-            "Notepad++": True,
-            "Regcool": True
-        }
-    ],
-    "custom_binaries" : [
-        {
-
-        }
-    ]
+    "default_binaries": {
+        "Mozilla Firefox": True,
+        "Process Explorer": True,
+        "Explorer++": True,
+        "7-Zip": True,
+        "Notepad++": True,
+        "Regcool": True
+    },
+    "custom_binaries": {}
 }
 
 # Checks for JSON config and generate default if missing
@@ -67,9 +61,11 @@ def extract_zip(zip_path, extract_path):
         zip_ref.extractall(extract_path)
 
 def install(software_name, url, download_path, progress_message):
-    for name, download_approval in config[0].items():
-        if name == software_name and download_approval == False:
-            break
+    download_approval = config.get(software_name, False)
+    if not download_approval:
+        print(f"Skipping {software_name} installation as it's not approved in the configuration.")
+        return
+
     print(f"Downloading {software_name}...")
     download_file_with_progress(url, download_path)
     print(f"{software_name} downloaded successfully.")
