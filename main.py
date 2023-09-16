@@ -136,5 +136,5 @@ def install_software():
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     install_software()
-    image_path = "C:\\path\\to\\your\\image.jpg"
+    image_path = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
     change_wallpaper(image_path)
