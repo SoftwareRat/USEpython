@@ -102,24 +102,27 @@ def install_software():
                 subprocess.run(download_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             print(f"{software_name} installed successfully.")
-            input()
             print(f"Downloading {software_name}...")
             download_file_with_progress(url, download_path)
             print(f"{software_name} downloaded successfully.")
 
             # Install software
             print(f"{progress_message}...")
-
-            # Extract ZIP archives natively in Python
-            if download_path.endswith('.zip'):
-                extract_dir = os.path.dirname(download_path)
-                extract_zip(download_path, extract_dir)
             
+            # Extract ZIP archives to the installation directory
+            if download_path.endswith('.zip'):
+                extract_dir = os.path.join(base_install_directory, os.path.basename(download_path).replace('.zip', ''))
+                extract_zip(download_path, extract_dir)
+
             # Run installation command
             if not download_path.endswith('.zip'):
-                subprocess.run(download_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            print(f"{software_name} installed successfully.")
+                if software_name == "Mozilla Firefox":
+                    install_command = f'{download_path} /InstallDirectoryPath={base_install_directory}\\Firefox'
+                elif software_name == "7-Zip":
+                    install_command = f'{download_path} /S /D={base_install_directory}\\7-Zip'
+                else:
+                    install_command = download_path
+                subprocess.run(install_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
