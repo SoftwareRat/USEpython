@@ -8,16 +8,17 @@ import winreg as reg
 import ctypes
 
 # Function to create a folder if it doesn't exist
-def create_folder(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+def create_folder(*directories):
+    for dir in directories: 
+        if not os.path.exists(dir): os.makedirs(dir)
+            
 
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
 # Define the directories for temporary downloads and software installation
 base_temp_directory = "C:\\UseTemp"
-base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
+base_install_directory = "C:\\UseTemp\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
 
 # Structure of default JSON
