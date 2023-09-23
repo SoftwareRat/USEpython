@@ -24,7 +24,7 @@ jobs:
 
     - name: Build EXE
       run: |
-        TMPDIR=C:\CustomTemp pyinstaller --onefile --hidden-import requests main.py
+        pyinstaller --onefile --no-tmpdir --hidden-import requests main.py
 
     - name: Upload EXE
       uses: actions/upload-artifact@v2
