@@ -26,7 +26,7 @@ jobs:
 
     - name: Build EXE
       run: |
-        pyinstaller --hidden-import requests --specpath ./dist main.py
+        pyinstaller --specpath ./dist main.py
 
     - name: Upload EXE
       uses: actions/upload-artifact@v3
