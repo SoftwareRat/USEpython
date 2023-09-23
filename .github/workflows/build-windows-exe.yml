@@ -24,7 +24,7 @@ jobs:
 
     - name: Build EXE
       run: |
-        pyinstaller --onefile --specpath ./dist main.py
+        pyinstaller --specpath ./dist main.py
 
     - name: Upload EXE
       uses: actions/upload-artifact@v2
