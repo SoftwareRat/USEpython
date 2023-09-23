@@ -18,7 +18,7 @@ def set_console_title(title):
 
 # Define the directories for temporary downloads and software installation
 base_temp_directory = "C:\\UseTemp"
-base_install_directory = "C:\\UseTemp\\kiosk\\AppData\\Local\\Programs"
+base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
 
 # Structure of default JSON
