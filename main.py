@@ -7,6 +7,8 @@ from tqdm import tqdm
 import winreg as reg
 import ctypes
 
+import win32com
+
 # Function to create a folder if it doesn't exist
 def create_folder(*directories):
     for dir in directories: 
@@ -20,6 +22,19 @@ def set_console_title(title):
 base_temp_directory = "C:\\UseTemp"
 base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
+
+def create_shortcut(target_path, shortcut_path):
+    # Create a shell object
+    shell = win32com.client.Dispatch("WScript.Shell")
+
+    # Create a shortcut
+    shortcut = shell.CreateShortcut(shortcut_path)
+
+    # Set the target path for the shortcut
+    shortcut.TargetPath = target_path
+
+    # Save the shortcut
+    shortcut.Save()
 
 # Structure of default JSON
 USE_json = {
