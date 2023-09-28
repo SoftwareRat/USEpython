@@ -6,7 +6,6 @@ import json
 from tqdm import tqdm
 import winreg as reg
 import ctypes
-
 import win32com
 
 # Function to create a folder if it doesn't exist
@@ -23,12 +22,26 @@ base_temp_directory = "C:\\UseTemp"
 base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
 
+def change_wallpaper(image_path):
+    try:
+        # Set the wallpaper
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 3)
+
+        # Notify Windows of the change
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 2)
+
+        print(f"Desktop wallpaper set to '{image_path}' successfully.")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
 def create_shortcut(target_path, shortcut_path):
     # Create a shell object
     shell = win32com.client.Dispatch("WScript.Shell")
 
     # Create a shortcut
     shortcut = shell.CreateShortcut(shortcut_path)
+    scz = shell.Cre
 
     # Set the target path for the shortcut
     shortcut.TargetPath = target_path
@@ -141,17 +154,6 @@ def install(software):
 
     print(f"{software['name']} installed successfully.")
 
-def change_wallpaper(image_path):
-    try:
-        # Set the wallpaper
-        ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 3)
-
-        # Notify Windows of the change
-        ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 2)
-
-        print(f"Desktop wallpaper set to '{image_path}' successfully.")
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
 
 def install_software():
     for software in config['default_binaries'] + config['custom_binaries']:
