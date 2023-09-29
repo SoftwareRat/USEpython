@@ -6,7 +6,6 @@ import json
 from tqdm import tqdm
 import winreg as reg
 import ctypes
-import win32com
 
 # Function to create a folder if it doesn't exist
 def create_folder(*directories):
@@ -16,6 +15,18 @@ def create_folder(*directories):
 
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
+
+# def create_shortcut
+def create_shortcut(target, shortcut_path):
+    try:
+        shell = ctypes.windll.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(shortcut_path)
+        shortcut.TargetPath = target
+        shortcut.IconLocation = target
+        shortcut.save()
+        #print(f"Shortcut created at: {shortcut_path}")
+    except Exception as e:
+        print(f"Error creating shortcut: {str(e)}")
 
 # Define the directories for temporary downloads and software installation
 base_temp_directory = "C:\\UseTemp"
@@ -34,21 +45,6 @@ def change_wallpaper(image_path):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
-
-def create_shortcut(target_path, shortcut_path):
-    # Create a shell object
-    shell = win32com.client.Dispatch("WScript.Shell")
-
-    # Create a shortcut
-    shortcut = shell.CreateShortcut(shortcut_path)
-    scz = shell.Cre
-
-    # Set the target path for the shortcut
-    shortcut.TargetPath = target_path
-
-    # Save the shortcut
-    shortcut.Save()
-
 # Structure of default JSON
 USE_json = {
     "default_binaries": [
@@ -57,42 +53,48 @@ USE_json = {
             "enabled": True,
             "url": "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64",
             "path": os.path.join(base_temp_directory, 'FirefoxSetup.exe'),
-            "install_command": f'{os.path.join(base_temp_directory, "FirefoxSetup.exe")} /InstallDirectoryPath={os.path.join(base_install_directory, "Firefox")}'
+            "install_command": f'{os.path.join(base_temp_directory, "FirefoxSetup.exe")} /InstallDirectoryPath={os.path.join(base_install_directory, "Firefox")}',
+            "shortcut": True
         },
         {
             "name": "Process Explorer",
             "enabled": True,
             "url": 'https://download.sysinternals.com/files/ProcessExplorer.zip',
             "path": os.path.join(base_temp_directory, 'ProcessExplorer.zip'),
-            "install_command": None
+            "install_command": None,
+            "shortcut": True
         },
         {
             "name": "7-Zip",
             "enabled": True,
             "url": 'https://7-zip.org/a/7z2301-x64.exe',
             "path": os.path.join(base_temp_directory, '7z-x64.exe'),
-            "install_command": f'{os.path.join(base_temp_directory, "7z-x64.exe")} /S /D={os.path.join(base_install_directory, "7-Zip")}'
+            "install_command": f'{os.path.join(base_temp_directory, "7z-x64.exe")} /S /D={os.path.join(base_install_directory, "7-Zip")}',
+            "shortcut": True
         },
         {
             "name": "Notepad++",
             "enabled": True,
             "url": 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip',
             "path": os.path.join(base_temp_directory, 'npp.portable.x64.zip'),
-            "install_command": None
+            "install_command": None,
+            "shortcut": True
         },
         {
             "name": "VLC Media Player",
             "enabled": True,
             "url": 'https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip',
             "path": os.path.join(base_temp_directory, 'vlc-win64.zip'),
-            "install_command": None
+            "install_command": None,
+            "shortcut": True
         },
         {
             "name": "Google Chrome",
             "enabled": False,
             "url": 'https://tools.google.com/service/update2/dlpageping?appguid={8A69D345-D564-463C-AFF1-A69D9E530F96}&iid={055D6AFB-CC3C-FE20-8FBA-F6DA054CAF50}&lang=en&browser=3&usagestats=0&appname=Google Chrome&needsadmin=prefers&ap=x64-stable-statsdef_1&installdataindex=empty&stage=retry&installsource=download',
             "path": os.path.join(base_temp_directory, 'chrome-installer.exe'),
-            "install_command": f'{os.path.join(base_temp_directory, "chrome-installer.exe")} /silent /install'
+            "install_command": f'{os.path.join(base_temp_directory, "chrome-installer.exe")} /silent /install',
+            "shortcut": True
         },
     ],
     "custom_binaries": [
@@ -101,7 +103,8 @@ USE_json = {
             "enabled": False,
             "url": "https://example.com/custom-software1.zip",
             "path": os.path.join(base_temp_directory, 'custom-software1.zip'),
-            "install_command": None
+            "install_command": None,
+            "shortcut": False
         },
     ]
 }
@@ -152,6 +155,12 @@ def install(software):
     if software['install_command']:
         subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    # Create shortcut if specified
+    if software.get('shortcut', False) is True:
+        shortcut_name = f"{software['name']}.lnk"
+        shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
+        create_shortcut(software['path'], shortcut_path)
+
     print(f"{software['name']} installed successfully.")
 
 
@@ -162,4 +171,5 @@ def install_software():
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     install_software()
+    # TEMP: Set Windows 11 default as wallpaper
     change_wallpaper("C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg")
