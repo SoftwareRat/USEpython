@@ -5,6 +5,8 @@ import zipfile
 import json
 from tqdm import tqdm
 import ctypes
+import winreg
+from enum import Enum
 
 # Function to create a folder if it doesn't exist
 def create_folder(*directories):
@@ -16,6 +18,27 @@ def create_folder(*directories):
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
+def find_exe(directory, exe_name) -> os.path:
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.lower() == exe_name.lower():
+                return os.path.join(root, file)
+    return None
+
+class reg_Types(Enum):
+    dword = winreg.REG_DWORD
+    string = winreg.REG_SZ
+    multi_string = winreg.REG_MULTI_SZ
+
+# Function to change value of a registry
+def set_regVal(key: winreg, key_path: str, val: str, valType, new_Val): # valType should only be gathered from reg_Types for safe-use
+    with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE)as sel_key:
+        try:
+            winreg.SetValueEx(sel_key, val, 0, valType, new_Val)
+        except Exception as e:
+            print(f'Unknown exception occured while modifying registry: {str(e)}') # Will be moved to log file as soon as we implement it
+        
+input()
 
 # Function to create a shortcut
 def create_shortcut(target, shortcut_path):
@@ -117,6 +140,11 @@ USE_json = {
             "shortcut": False,
             "exe_name": "example.exe"
         },
+    ],
+    "customization": [
+        {
+            "dark_mode": True
+        }
     ]
 }
 
@@ -171,8 +199,7 @@ def install(software):
 
     # Create shortcut for supported applications
     if software.get('shortcut', False) is True and software["enabled"]:
-        exe_name = software['exe_name']
-        exe_path = find_exe(base_install_directory, exe_name)
+        exe_path = find_exe(base_install_directory, software['exe_name'])
         if exe_path:
             shortcut_name = f"{software['name']}.lnk"
             shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
@@ -185,13 +212,6 @@ def install(software):
     print(f"{software['name']} installed successfully.")
 
 
-def find_exe(directory, exe_name):
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower() == exe_name.lower():
-                return os.path.join(root, file)
-    return None
-
 
 def install_software():
     for software in config['default_binaries'] + config['custom_binaries']:
@@ -203,3 +223,6 @@ if __name__ == "__main__":
     install_software()
     # TEMP: Set Windows 11 default as wallpaper
     change_wallpaper("C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg")
+    # Changing to dark mode
+    if config["customization"]["dark_mode"]:
+        set_regVal(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword, 0)
