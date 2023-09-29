@@ -4,19 +4,20 @@ import subprocess
 import zipfile
 import json
 from tqdm import tqdm
-import winreg as reg
 import ctypes
 
 # Function to create a folder if it doesn't exist
 def create_folder(*directories):
-    for dir in directories: 
-        if not os.path.exists(dir): os.makedirs(dir)
-            
+    for dir in directories:
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
 
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
-# def create_shortcut
+
+# Function to create a shortcut
 def create_shortcut(target, shortcut_path):
     try:
         shell = ctypes.windll.Dispatch("WScript.Shell")
@@ -24,14 +25,17 @@ def create_shortcut(target, shortcut_path):
         shortcut.TargetPath = target
         shortcut.IconLocation = target
         shortcut.save()
-        #print(f"Shortcut created at: {shortcut_path}")
+        # Only required for testing purposes
+        # print(f"Shortcut created at: {shortcut_path}")
     except Exception as e:
         print(f"Error creating shortcut: {str(e)}")
+
 
 # Define the directories for temporary downloads and software installation
 base_temp_directory = "C:\\UseTemp"
 base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
+
 
 def change_wallpaper(image_path):
     try:
@@ -54,7 +58,8 @@ USE_json = {
             "url": "https://download.mozilla.org/?product=firefox-latest-ssl&os=win64",
             "path": os.path.join(base_temp_directory, 'FirefoxSetup.exe'),
             "install_command": f'{os.path.join(base_temp_directory, "FirefoxSetup.exe")} /InstallDirectoryPath={os.path.join(base_install_directory, "Firefox")}',
-            "shortcut": True
+            "shortcut": False,
+            "exe_name": "firefox.exe"
         },
         {
             "name": "Process Explorer",
@@ -62,7 +67,8 @@ USE_json = {
             "url": 'https://download.sysinternals.com/files/ProcessExplorer.zip',
             "path": os.path.join(base_temp_directory, 'ProcessExplorer.zip'),
             "install_command": None,
-            "shortcut": True
+            "shortcut": True,
+            "exe_name": "procexp64.exe"
         },
         {
             "name": "7-Zip",
@@ -70,7 +76,8 @@ USE_json = {
             "url": 'https://7-zip.org/a/7z2301-x64.exe',
             "path": os.path.join(base_temp_directory, '7z-x64.exe'),
             "install_command": f'{os.path.join(base_temp_directory, "7z-x64.exe")} /S /D={os.path.join(base_install_directory, "7-Zip")}',
-            "shortcut": True
+            "shortcut": True,
+            "exe_name": "7zFM.exe"
         },
         {
             "name": "Notepad++",
@@ -78,7 +85,8 @@ USE_json = {
             "url": 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip',
             "path": os.path.join(base_temp_directory, 'npp.portable.x64.zip'),
             "install_command": None,
-            "shortcut": True
+            "shortcut": True,
+            "exe_name": "notepad++.exe"
         },
         {
             "name": "VLC Media Player",
@@ -86,7 +94,8 @@ USE_json = {
             "url": 'https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip',
             "path": os.path.join(base_temp_directory, 'vlc-win64.zip'),
             "install_command": None,
-            "shortcut": True
+            "shortcut": True,
+            "exe_name": "vlc.exe"
         },
         {
             "name": "Google Chrome",
@@ -94,7 +103,8 @@ USE_json = {
             "url": 'https://tools.google.com/service/update2/dlpageping?appguid={8A69D345-D564-463C-AFF1-A69D9E530F96}&iid={055D6AFB-CC3C-FE20-8FBA-F6DA054CAF50}&lang=en&browser=3&usagestats=0&appname=Google Chrome&needsadmin=prefers&ap=x64-stable-statsdef_1&installdataindex=empty&stage=retry&installsource=download',
             "path": os.path.join(base_temp_directory, 'chrome-installer.exe'),
             "install_command": f'{os.path.join(base_temp_directory, "chrome-installer.exe")} /silent /install',
-            "shortcut": True
+            "shortcut": True,
+            "exe_name": "chrome.exe"
         },
     ],
     "custom_binaries": [
@@ -104,7 +114,8 @@ USE_json = {
             "url": "https://example.com/custom-software1.zip",
             "path": os.path.join(base_temp_directory, 'custom-software1.zip'),
             "install_command": None,
-            "shortcut": False
+            "shortcut": False,
+            "exe_name": "example.exe"
         },
     ]
 }
@@ -115,6 +126,7 @@ if not os.path.isfile("use_conf.json"):
         json.dump(USE_json, json_file, indent=4)
 
 config = json.load(open('use_conf.json', 'r'))
+
 
 def download_file_with_progress(url, save_path):
     response = requests.get(url, stream=True)
@@ -132,9 +144,11 @@ def download_file_with_progress(url, save_path):
             file.write(data)
             progress_bar.update(len(data))
 
+
 def extract_zip(zip_path, extract_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_path)
+
 
 def install(software):
     if not software["enabled"]:
@@ -157,16 +171,32 @@ def install(software):
 
     # Create shortcut if specified
     if software.get('shortcut', False) is True:
-        shortcut_name = f"{software['name']}.lnk"
-        shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
-        create_shortcut(software['path'], shortcut_path)
+        exe_name = software['exe_name']
+        exe_path = find_exe(base_install_directory, exe_name)
+        if exe_path:
+            shortcut_name = f"{software['name']}.lnk"
+            shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
+            create_shortcut(exe_path, shortcut_path)
+            # Only required for testing purposes
+            #print(f"Shortcut for {software['name']} created successfully.")
+        else:
+            print(f"Executable for {software['name']} not found.")
 
     print(f"{software['name']} installed successfully.")
+
+
+def find_exe(directory, exe_name):
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.lower() == exe_name.lower():
+                return os.path.join(root, file)
+    return None
 
 
 def install_software():
     for software in config['default_binaries'] + config['custom_binaries']:
         install(software)
+
 
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
