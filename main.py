@@ -100,7 +100,7 @@ USE_json = {
         {
             "name": "Google Chrome",
             "enabled": False,
-            "url": 'https://tools.google.com/service/update2/dlpageping?appguid={8A69D345-D564-463C-AFF1-A69D9E530F96}&iid={055D6AFB-CC3C-FE20-8FBA-F6DA054CAF50}&lang=en&browser=3&usagestats=0&appname=Google Chrome&needsadmin=prefers&ap=x64-stable-statsdef_1&installdataindex=empty&stage=retry&installsource=download',
+            "url": 'https://dl.google.com/chrome/install/latest/chrome_installer.exe',
             "path": os.path.join(base_temp_directory, 'chrome-installer.exe'),
             "install_command": f'{os.path.join(base_temp_directory, "chrome-installer.exe")} /silent /install',
             "shortcut": True,
