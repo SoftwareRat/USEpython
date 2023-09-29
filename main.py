@@ -169,8 +169,8 @@ def install(software):
     if software['install_command']:
         subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Create shortcut if specified
-    if software.get('shortcut', False) is True:
+    # Create shortcut for supported applications
+    if software.get('shortcut', False) is True and software["enabled"]:
         exe_name = software['exe_name']
         exe_path = find_exe(base_install_directory, exe_name)
         if exe_path:
