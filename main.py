@@ -10,7 +10,7 @@ from enum import Enum
 import logging
 import inspect
 
-logger_name = 'USE_LOGS.log'
+logger_name = 'USE.log'
 
 log_file = os.path.join(os.getenv("TEMP"), logger_name)
 logger = logging.getLogger(logger_name)
@@ -22,20 +22,13 @@ fh.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 
 def get_func_name(caller: bool):
-    match caller:
-        case True:
-            return inspect.currentframe().f_back.f_back.f_code.co_names
-        case False:
-            return inspect.currentframe().f_back.f_code.co_names
-
-
+    return inspect.currentframe().f_back.f_back.f_code.co_names if caller else inspect.currentframe().f_back.f_code.co_names
 
 # Function to create a folder if it doesn't exist
 def create_folder(*directories):
     for dir in directories:
         if not os.path.exists(dir):
             os.makedirs(dir)
-
 
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
@@ -52,15 +45,15 @@ class reg_Types(Enum):
     string = winreg.REG_SZ
     multi_string = winreg.REG_MULTI_SZ
 
-# Function to change value of a registry
-def set_regVal(key: winreg, key_path: str, val: str, valType, new_Val): # valType should only be gathered from reg_Types for safe-use
+# Function to change the value of a registry
+def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
     caller_name = inspect.stack()[1][3]
-    with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE)as sel_key:
+    with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
         try:
-            winreg.SetValueEx(sel_key, val, 0, valType, new_Val)
+            winreg.SetValueEx(sel_key, val, 0, val_type, new_val)
         except Exception as e:
-            logger.error(f'Unexpected error occured at {get_func_name(caller=False)} while being ivoked by {get_func_name(caller=True)} : {str(e)}')
-        
+            logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
+
 
 # Function to create a shortcut
 def create_shortcut(target, shortcut_path):
@@ -73,8 +66,7 @@ def create_shortcut(target, shortcut_path):
         # Only required for testing purposes
         # print(f"Shortcut created at: {shortcut_path}")
     except Exception as e:
-        logger.error(f'Unexpected error occured at {get_func_name(caller=False)} while being ivoked by {get_func_name(caller=True)} : {str(e)}')
-
+        logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
 
 # Define the directories for temporary downloads and software installation
@@ -93,7 +85,7 @@ def change_wallpaper(image_path):
 
         print(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
-        logger.error(f'Unexpected error occured at {get_func_name(caller=False)} while being ivoked by {get_func_name(caller=True)} : {str(e)}')
+        logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
 
 # Structure of default JSON
@@ -228,19 +220,17 @@ def install(software):
             shortcut_name = f"{software['name']}.lnk"
             shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
             create_shortcut(exe_path, shortcut_path)
-            # Only required for testing purposes
-            #print(f"Shortcut for {software['name']} created successfully.")
+            logger.info(f"Shortcut for {software['name']} created successfully.")
         else:
             print(f"Executable for {software['name']} not found.")
+            logger.error(f"Executable for {software['name']} not found.")
 
     print(f"{software['name']} installed successfully.")
-
-
+    logger.info(f"{software['name']} installed successfully.")
 
 def install_software():
     for software in config['default_binaries'] + config['custom_binaries']:
         install(software)
-
 
 if __name__ == "__main__":
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
@@ -249,4 +239,4 @@ if __name__ == "__main__":
     change_wallpaper("C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg")
     # Changing to dark mode
     if config["customization"]["dark_mode"]:
-        set_regVal(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword, 0)
+        set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword, 0)
