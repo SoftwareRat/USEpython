@@ -7,6 +7,28 @@ from tqdm import tqdm
 import ctypes
 import winreg
 from enum import Enum
+import logging
+import inspect
+
+logger_name = 'USE_LOGS.log'
+
+log_file = os.path.join(os.getenv("TEMP"), logger_name)
+logger = logging.getLogger(logger_name)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh = logging.FileHandler(log_file)
+fh.setFormatter(formatter)
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
+
+def get_func_name(caller: bool):
+    match caller:
+        case True:
+            return inspect.currentframe().f_back.f_back.f_code.co_names
+        case False:
+            return inspect.currentframe().f_back.f_code.co_names
+
+
 
 # Function to create a folder if it doesn't exist
 def create_folder(*directories):
@@ -32,13 +54,13 @@ class reg_Types(Enum):
 
 # Function to change value of a registry
 def set_regVal(key: winreg, key_path: str, val: str, valType, new_Val): # valType should only be gathered from reg_Types for safe-use
+    caller_name = inspect.stack()[1][3]
     with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE)as sel_key:
         try:
             winreg.SetValueEx(sel_key, val, 0, valType, new_Val)
         except Exception as e:
-            print(f'Unknown exception occured while modifying registry: {str(e)}') # Will be moved to log file as soon as we implement it
+            logger.error(f'Unexpected error occured at {get_func_name(caller=False)} while being ivoked by {get_func_name(caller=True)} : {str(e)}')
         
-input()
 
 # Function to create a shortcut
 def create_shortcut(target, shortcut_path):
@@ -51,7 +73,8 @@ def create_shortcut(target, shortcut_path):
         # Only required for testing purposes
         # print(f"Shortcut created at: {shortcut_path}")
     except Exception as e:
-        print(f"Error creating shortcut: {str(e)}")
+        logger.error(f'Unexpected error occured at {get_func_name(caller=False)} while being ivoked by {get_func_name(caller=True)} : {str(e)}')
+
 
 
 # Define the directories for temporary downloads and software installation
@@ -70,7 +93,8 @@ def change_wallpaper(image_path):
 
         print(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        logger.error(f'Unexpected error occured at {get_func_name(caller=False)} while being ivoked by {get_func_name(caller=True)} : {str(e)}')
+
 
 # Structure of default JSON
 USE_json = {
