@@ -63,8 +63,7 @@ def create_shortcut(target, shortcut_path):
         shortcut.TargetPath = target
         shortcut.IconLocation = target
         shortcut.save()
-        # Only required for testing purposes
-        # print(f"Shortcut created at: {shortcut_path}")
+        logger.info(f"Shortcut created successfully at {shortcut_path}.")
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
@@ -83,7 +82,7 @@ def change_wallpaper(image_path):
         # Notify Windows of the change
         ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 2)
 
-        print(f"Desktop wallpaper set to '{image_path}' successfully.")
+        logger.info(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
