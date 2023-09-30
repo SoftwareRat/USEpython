@@ -24,7 +24,6 @@ logger.addHandler(fh)
 def get_func_name(caller: bool):
     return inspect.currentframe().f_back.f_back.f_code.co_names if caller else inspect.currentframe().f_back.f_code.co_names
 
-# Function to create a folder if it doesn't exist
 def create_folder(*directories):
     for dir in directories:
         if not os.path.exists(dir):
@@ -45,7 +44,6 @@ class reg_Types(Enum):
     string = winreg.REG_SZ
     multi_string = winreg.REG_MULTI_SZ
 
-# Function to change the value of a registry
 def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
     caller_name = inspect.stack()[1][3]
     with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
@@ -54,8 +52,6 @@ def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
         except Exception as e:
             logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
-
-# Function to create a shortcut
 def create_shortcut(target, shortcut_path):
     try:
         shell = ctypes.windll.Dispatch("WScript.Shell")
@@ -67,25 +63,19 @@ def create_shortcut(target, shortcut_path):
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
-
-# Define the directories for temporary downloads and software installation
 base_temp_directory = "C:\\UseTemp"
 base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
-
 
 def change_wallpaper(image_path):
     try:
         # Set the wallpaper
         ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 3)
-
         # Notify Windows of the change
         ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 2)
-
         logger.info(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
-
 
 # Structure of default JSON
 USE_json = {
@@ -170,8 +160,7 @@ if not os.path.isfile("use_conf.json"):
 
 config = json.load(open('use_conf.json', 'r'))
 
-
-def download_file_with_progress(url, save_path):
+def download_file_with_progress(url, save_path, overall_progress_bar):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
 
@@ -186,27 +175,26 @@ def download_file_with_progress(url, save_path):
         for data in response.iter_content(chunk_size=chunk_size):
             file.write(data)
             progress_bar.update(len(data))
+            overall_progress_bar.update(len(data))
 
-
-def extract_zip(zip_path, extract_path):
+def extract_zip(zip_path, extract_path, overall_progress_bar):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_path)
+        overall_progress_bar.update(os.path.getsize(zip_path))
 
-
-def install(software):
+def install(software, overall_progress_bar):
     if not software["enabled"]:
         return
 
-    print(f"Installing {software['name']}...")
+    overall_progress_bar.set_postfix_str(f"Installing {software['name']}...")
+
     if software['url']:
-        print(f"Downloading {software['name']}...")
-        download_file_with_progress(software['url'], software['path'])
-        print(f"{software['name']} downloaded successfully.")
+        download_file_with_progress(software['url'], software['path'], overall_progress_bar)
 
     # Extract ZIP archives to the installation directory
     if software['path'].endswith('.zip'):
         extract_dir = os.path.join(base_install_directory, os.path.basename(software['path']).replace('.zip', ''))
-        extract_zip(software['path'], extract_dir)
+        extract_zip(software['path'], extract_dir, overall_progress_bar)
 
     # Run installation command
     if software['install_command']:
@@ -221,21 +209,28 @@ def install(software):
             create_shortcut(exe_path, shortcut_path)
             logger.info(f"Shortcut for {software['name']} created successfully.")
         else:
-            print(f"Executable for {software['name']} not found.")
             logger.error(f"Executable for {software['name']} not found.")
 
-    print(f"{software['name']} installed successfully.")
     logger.info(f"{software['name']} installed successfully.")
 
-def install_software():
+def install_software(overall_progress_bar):
+    total_software = len(config['default_binaries']) + len(config['custom_binaries'])
+    overall_progress_bar.total = total_software
     for software in config['default_binaries'] + config['custom_binaries']:
-        install(software)
+        install(software, overall_progress_bar)
+        overall_progress_bar.update(1)
 
 if __name__ == "__main__":
+    overall_progress_bar = tqdm(total=0, unit='B', unit_scale=True, unit_divisor=1024, desc="Overall Progress")
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
-    install_software()
+    try:
+        install_software(overall_progress_bar)
+    finally:
+        overall_progress_bar.close()
+
     # TEMP: Set Windows 11 default as wallpaper
     change_wallpaper("C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg")
+
     # Changing to dark mode
     if config["customization"]["dark_mode"]:
         set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword, 0)
