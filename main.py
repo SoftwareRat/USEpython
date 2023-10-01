@@ -7,14 +7,14 @@ from tqdm import tqdm
 import ctypes
 import winreg
 import logging
-import inspect
 import shutil
 from enum import Enum
+import inspect
 
+# Logger configuration
 logger_name = 'USE.log'
 log_file = os.path.join(os.getenv("TEMP"), logger_name)
 
-# Logging setup
 LOGGING_CONFIG = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -51,34 +51,47 @@ class RegistryTypes(Enum):
 
 
 def create_folder(*directories):
-    for dir in directories:
-        os.makedirs(dir, exist_ok=True)
+    """Create folders if they don't exist."""
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+
 
 def set_console_title(title):
+    """Set console title."""
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
-def find_exe(directory, exe_name):
+
+def find_executable(directory, exe_name):
+    """Find the path of an executable in the given directory."""
     for root, dirs, files in os.walk(directory):
         if exe_name.lower() in (file.lower() for file in files):
             return os.path.join(root, exe_name)
     return None
 
-def get_func_name(caller: bool):
+
+def get_function_name(caller: bool):
+    """Get the name of the calling function."""
     return inspect.currentframe().f_back.f_back.f_code.co_names if caller else inspect.currentframe().f_back.f_code.co_names
 
-def set_reg_val(key, key_path, val, val_type, new_val):
+
+def set_registry_value(key, key_path, value_name, value_type, new_value):
+    """Set a value in the Windows Registry."""
     caller_name = inspect.stack()[1][3]
-    with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
+    with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as selected_key:
         try:
-            winreg.SetValueEx(sel_key, val, 0, val_type, new_val)
+            winreg.SetValueEx(selected_key, value_name, 0, value_type, new_value)
         except Exception as e:
             log_error(caller_name, e)
 
+
+# Directories
 base_temp_directory = "C:\\UseTemp"
-base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
+base_install_directory = os.path.join(os.getenv("LOCALAPPDATA"), "Programs")
 create_folder(base_temp_directory, base_install_directory)
 
+
 def change_wallpaper(image_path):
+    """Change desktop wallpaper."""
     try:
         if image_path.startswith(("http://", "https://")):
             # Download image if it's a web link
@@ -94,7 +107,8 @@ def change_wallpaper(image_path):
 
         logger.info(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
-        logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
+        logger.error(f'Unexpected error occurred at {get_function_name(caller=False)} while being invoked by {get_function_name(caller=True)}: {str(e)}')
+
 
 # Structure of default JSON
 USE_json = {
@@ -254,14 +268,16 @@ USE_json = {
     ]
 }
 
-# Checks for JSON config and generate default if missing
+# Check for JSON config and generate default if missing
 if not os.path.isfile("use_conf.json"):
     with open('use_conf.json', 'w') as json_file:
         json.dump(USE_json, json_file, indent=4)
 
 config = json.load(open('use_conf.json', 'r'))
 
+
 def create_shortcut(target, shortcut_path):
+    """Create a shortcut."""
     try:
         shell = ctypes.windll.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
@@ -272,7 +288,9 @@ def create_shortcut(target, shortcut_path):
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
 
+
 def install_winxshell(overall_progress_bar):
+    """Install WinXShell."""
     overall_progress_bar.set_postfix_str("Installing WinXShell...")
 
     # Move files to the appropriate locations
@@ -291,10 +309,14 @@ def install_winxshell(overall_progress_bar):
     overall_progress_bar.set_postfix_str("WinXShell installed successfully.")
     overall_progress_bar.update(1)
 
+
 def log_error(caller_name, error):
+    """Log an error."""
     logger.error(f'Unexpected error occurred at {caller_name}: {str(error)}')
 
+
 def download_file_with_progress(url, save_path, overall_progress_bar):
+    """Download a file with a progress bar."""
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
@@ -317,6 +339,7 @@ def download_file_with_progress(url, save_path, overall_progress_bar):
 
 
 def extract_zip(zip_path, extract_path, overall_progress_bar):
+    """Extract a ZIP file."""
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_path)
@@ -326,6 +349,7 @@ def extract_zip(zip_path, extract_path, overall_progress_bar):
 
 
 def install(software, overall_progress_bar):
+    """Install software."""
     if not software["enabled"]:
         return
 
@@ -346,7 +370,7 @@ def install(software, overall_progress_bar):
 
         # Create shortcut for supported applications
         if software.get('shortcut', False) and software["enabled"]:
-            exe_path = find_exe(base_install_directory, software['exe_name'])
+            exe_path = find_executable(base_install_directory, software['exe_name'])
             if exe_path:
                 shortcut_name = f"{software['name']}.lnk"
                 shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
@@ -361,6 +385,7 @@ def install(software, overall_progress_bar):
 
 
 def install_software(overall_progress_bar):
+    """Install all software."""
     try:
         total_software = len(config['default_binaries']) + len(config['custom_binaries']) + 1  # Adding 1 for WinXShell
         overall_progress_bar.total = total_software
@@ -377,11 +402,12 @@ def install_software(overall_progress_bar):
 
 
 def apply_customization(overall_progress_bar):
+    """Apply customization settings."""
     try:
-        logger.info(f"Applying customization settings...")
+        logger.info("Applying customization settings...")
 
         # Simulating a progress bar for customization
-        overall_progress_bar.set_postfix_str(f"Applying customization settings...")
+        overall_progress_bar.set_postfix_str("Applying customization settings...")
         overall_progress_bar.update(1)
 
         # Your customization logic here
@@ -389,10 +415,10 @@ def apply_customization(overall_progress_bar):
         if customization_options:
             for option, value in customization_options[0].items():
                 if option == "dark_mode" and value:
-                    set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", RegistryTypes.DWORD, 0)
+                    set_registry_value(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", RegistryTypes.DWORD, 0)
                     logger.info("Dark mode applied successfully.")
                 elif option == "dark_mode" and not value:
-                    set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", RegistryTypes.DWORD, 1)
+                    set_registry_value(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", RegistryTypes.DWORD, 1)
                     logger.info("Light mode applied successfully.")
                 elif option == "wallpaper_path" and value:
                     # Set the wallpaper
@@ -401,15 +427,16 @@ def apply_customization(overall_progress_bar):
                 # Add more conditions for other customization options
 
         # Simulating the completion of customization
-        overall_progress_bar.set_postfix_str(f"Customization settings applied.")
+        overall_progress_bar.set_postfix_str("Customization settings applied.")
         overall_progress_bar.update(1)
 
-        logger.info(f"Customization settings applied successfully.")
+        logger.info("Customization settings applied successfully.")
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
 
 
 def main():
+    """Main function."""
     overall_progress_bar = tqdm(total=0, unit='B', unit_scale=True, unit_divisor=1024, desc="Overall Progress")
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     try:
