@@ -11,28 +11,43 @@ import inspect
 from enum import Enum
 import comtypes.client
 
+# Setup logger
 logger_name = 'USE.log'
-
 log_file = os.path.join(os.getenv("TEMP"), logger_name)
 logger = logging.getLogger(logger_name)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh = logging.FileHandler(log_file)
-fh.setFormatter(formatter)
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
+file_handler = logging.FileHandler(log_file)
+file_handler.setFormatter(formatter)
+file_handler.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
-def get_func_name(caller: bool):
+def get_caller_name(caller: bool):
     return inspect.currentframe().f_back.f_back.f_code.co_names if caller else inspect.currentframe().f_back.f_code.co_names
 
-def create_folder(*directories):
+def create_folders(*directories):
     for dir in directories:
         os.makedirs(dir, exist_ok=True)  # Use exist_ok to avoid checking existence before creating
 
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
-def find_exe(directory, exe_name) -> os.path:
+def download_image(image_path):
+    try:
+        image_data = requests.get(image_path).content
+        image_path = os.path.join(os.getenv("USERPROFILE"), "Pictures", "wallpaper.jpg")
+        with open(image_path, 'wb') as img_file:
+            img_file.write(image_data)
+    except Exception as e:
+        logger.error(f"Failed to download image from {image_path}: {str(e)}")
+        return None
+
+    return image_path
+
+def find_exe(directory, exe_name) -> str:
     for root, dirs, files in os.walk(directory):
         if exe_name.lower() in (file.lower() for file in files):
             return os.path.join(root, exe_name)
@@ -50,31 +65,44 @@ def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
             # Convert val_type to integer before passing it to SetValueEx
             winreg.SetValueEx(sel_key, val, 0, int(val_type), new_val)
         except Exception as e:
-            logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
+            logger.error(f'Unexpected error occurred at {get_caller_name(caller=False)} while being invoked by {get_caller_name(caller=True)}: {str(e)}')
 
 def create_shortcut(target, shortcut_path):
     try:
         shell = comtypes.client.CreateObject("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
+
+        # Set the properties individually
         shortcut.TargetPath = target
         shortcut.IconLocation = target
-        shortcut.save()
+
+        # Save the shortcut
+        persistence = shortcut.QueryInterface(comtypes.shelllink.IPersistFile)
+        persistence.Save(shortcut_path, 0)
         logger.info(f"Shortcut created successfully at {shortcut_path}.")
     except Exception as e:
-        logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
+        logger.error(f'Unexpected error occurred at {get_caller_name(caller=False)} while being invoked by {get_caller_name(caller=True)}: {str(e)}')
 
 base_temp_directory = "C:\\UseTemp"
 base_install_directory = os.path.join(os.getenv("LOCALAPPDATA"), "Programs")
-create_folder(base_temp_directory, base_install_directory)
+create_folders(base_temp_directory, base_install_directory)
+
+def create_software_shortcut(software):
+    if software.get('shortcut', False) is True and software["enabled"]:
+        exe_path = find_exe(base_install_directory, software['exe_name'])
+        if exe_path:
+            shortcut_name = f"{software['name']}.lnk"
+            shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
+            create_shortcut(exe_path, shortcut_path)
+            logger.info(f"Shortcut for {software['name']} created successfully.")
+        else:
+            logger.error(f"Executable for {software['name']} not found.")
 
 def change_wallpaper(image_path):
     try:
         if image_path.startswith(("http://", "https://")):
             # Download image if it's a web link
-            image_data = requests.get(image_path).content
-            image_path = os.path.join(os.getenv("USERPROFILE"), "Pictures", "wallpaper.jpg")
-            with open(image_path, 'wb') as img_file:
-                img_file.write(image_data)
+            image_path = download_image(image_path)
 
         # Set the wallpaper
         ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 3)
@@ -83,10 +111,10 @@ def change_wallpaper(image_path):
 
         logger.info(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
-        logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
+        logger.error(f'Unexpected error occurred at {get_caller_name(caller=False)} while being invoked by {get_caller_name(caller=True)}: {str(e)}')
 
 # Structure of default JSON
-USE_json = {
+DEFAULT_CONFIG = {
     "default_binaries": [
         {
             "name": "Mozilla Firefox",
@@ -162,15 +190,19 @@ USE_json = {
     ]
 }
 
-# Checks for JSON config and generate default if missing
-if not os.path.isfile("use_conf.json"):
-    with open('use_conf.json', 'w') as json_file:
-        json.dump(USE_json, json_file, indent=4)
+def read_config():
+    # Checks for JSON config and generate default if missing
+    if not os.path.isfile("use_conf.json"):
+        with open('use_conf.json', 'w') as json_file:
+            json.dump(DEFAULT_CONFIG, json_file, indent=4)
 
-config = json.load(open('use_conf.json', 'r'))
+    return json.load(open('use_conf.json', 'r'))
 
 def download_file_with_progress(url, save_path, overall_progress_bar):
     response = requests.get(url, stream=True)
+    if response.status_code != 200:
+        logger.error(f"Failed to download file from {url}. Status code: {response.status_code}")
+        return
     total_size = int(response.headers.get('content-length', 0))
 
     with open(save_path, 'wb') as file, tqdm(
@@ -210,15 +242,7 @@ def install(software, overall_progress_bar):
         subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Create shortcut for supported applications
-    if software.get('shortcut', False) is True and software["enabled"]:
-        exe_path = find_exe(base_install_directory, software['exe_name'])
-        if exe_path:
-            shortcut_name = f"{software['name']}.lnk"
-            shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
-            create_shortcut(exe_path, shortcut_path)
-            logger.info(f"Shortcut for {software['name']} created successfully.")
-        else:
-            logger.error(f"Executable for {software['name']} not found.")
+    create_software_shortcut(software)
 
     logger.info(f"{software['name']} installed successfully.")
 
@@ -265,11 +289,15 @@ def apply_customization(overall_progress_bar):
     
     logger.info(f"Customization settings applied successfully.")
 
-if __name__ == "__main__":
+def main():
     overall_progress_bar = tqdm(total=0, unit='B', unit_scale=True, unit_divisor=1024, desc="Overall Progress")
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     try:
+        config = read_config()
         install_software(overall_progress_bar)
         apply_customization(overall_progress_bar)
     finally:
         overall_progress_bar.close()
+
+if __name__ == "__main__":
+    main()
