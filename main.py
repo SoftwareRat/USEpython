@@ -5,9 +5,10 @@ import zipfile
 import json
 from tqdm import tqdm
 import ctypes
+import inspect
 import winreg
 import logging
-import inspect
+import psutil
 import shutil
 from enum import Enum
 
@@ -23,6 +24,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(logger_name)
 
+
 class RegistryTypes(Enum):
     DWORD = winreg.REG_DWORD
     STRING = winreg.REG_SZ
@@ -30,22 +32,31 @@ class RegistryTypes(Enum):
 
 
 def create_folder(*directories):
-    for dir in directories:
-        os.makedirs(dir, exist_ok=True)
+    """Create folders if they don't exist."""
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+
 
 def set_console_title(title):
+    """Set console title."""
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
+
 def find_exe(directory, exe_name):
+    """Find an executable in a directory."""
     for root, dirs, files in os.walk(directory):
         if exe_name.lower() in (file.lower() for file in files):
             return os.path.join(root, exe_name)
     return None
 
+
 def get_func_name(caller: bool):
+    """Get the function name."""
     return inspect.currentframe().f_back.f_back.f_code.co_names if caller else inspect.currentframe().f_back.f_code.co_names
 
+
 def set_reg_val(key, key_path, val, val_type, new_val):
+    """Set registry value."""
     caller_name = inspect.stack()[1][3]
     with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
         try:
@@ -53,11 +64,27 @@ def set_reg_val(key, key_path, val, val_type, new_val):
         except Exception as e:
             log_error(caller_name, e)
 
+
 base_temp_directory = "C:\\UseTemp"
 base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
 create_folder(base_temp_directory, base_install_directory)
 
+
+def stop_process_by_name(process_name):
+    """Stop a process by name."""
+    for process in psutil.process_iter(['pid', 'name']):
+        if process.info['name'] == process_name:
+            try:
+                # Terminate the process
+                psutil.Process(process.info['pid']).terminate()
+                print(f"Process {process_name} terminated successfully.")
+            except psutil.NoSuchProcess:
+                print(f"Process {process_name} not found.")
+            except psutil.AccessDenied:
+                print(f"Access denied to terminate process {process_name}.")
+
 def change_wallpaper(image_path):
+    """Change desktop wallpaper."""
     try:
         if image_path.startswith(("http://", "https://")):
             # Download image if it's a web link
@@ -74,6 +101,7 @@ def change_wallpaper(image_path):
         logger.info(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
+
 
 # Structure of default JSON
 USE_json = {
@@ -240,7 +268,9 @@ if not os.path.isfile("use_conf.json"):
 
 config = json.load(open('use_conf.json', 'r'))
 
+
 def create_shortcut(target, shortcut_path):
+    """Create a shortcut."""
     try:
         shell = ctypes.windll.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
@@ -251,12 +281,25 @@ def create_shortcut(target, shortcut_path):
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
 
+
 def install_winxshell(overall_progress_bar):
+    """Install WinXShell."""
     try:
         overall_progress_bar.set_postfix_str("Installing WinXShell...")
 
-        # Source directory where WinXShell is already extracted
+        # Source directory where WinXShell is already present
         winxshell_dir = os.path.join(base_install_directory, 'WinXShell')
+
+        # Delete main.bat in base_install_directory/WinXShell
+        main_bat_path = os.path.join(winxshell_dir, 'main.bat')
+        os.remove(main_bat_path)
+
+        # Delete files with names containing "zh-CN" and "x86" in base_install_directory
+        for root, dirs, files in os.walk(winxshell_dir):
+            for file in files:
+                if "zh-CN" in file or "x86" in file:
+                    file_path = os.path.join(root, file)
+                    os.remove(file_path)
 
         # Copy all contents of X_PF/WinXShell to the extracted root folder in base_install_directory
         for root, dirs, files in os.walk(os.path.join(winxshell_dir, 'X_PF', 'WinXShell')):
@@ -265,32 +308,22 @@ def install_winxshell(overall_progress_bar):
                 dst_path = os.path.join(base_install_directory, file)
                 shutil.copy(src_path, dst_path)
 
-        # Delete main.bat in base_install_directory/WinXShell
-        main_bat_path = os.path.join(winxshell_dir, 'main.bat')
-        os.remove(main_bat_path)
-
-        # Delete files with names containing "zh-CN" and "x86" in base_install_directory
-        for root, dirs, files in os.walk(base_install_directory):
-            for file in files:
-                if "zh-CN" in file or "x86" in file:
-                    file_path = os.path.join(root, file)
-                    os.remove(file_path)
-
-        # Delete X_PF/WinXShell in base_install_directory
-        shutil.rmtree(os.path.join(base_install_directory, 'X_PF', 'WinXShell'))
-
         # Make 2 copies of WinXShell_x64.exe
-        winxshell_exe_path = os.path.join(base_install_directory, 'WinXShell_x64.exe')
-        explorer_exe_path = os.path.join(base_install_directory, 'explorer.exe')
-        gfndesktop_exe_path = os.path.join(base_install_directory, 'gfndesktop.exe')
+        winxshell_exe_path = os.path.join(winxshell_dir, 'WinXShell_x64.exe')
+        explorer_exe_path = os.path.join(winxshell_dir, 'explorer.exe')
+        gfndesktop_exe_path = os.path.join(winxshell_dir, 'gfndesktop.exe')
 
         shutil.copy(winxshell_exe_path, explorer_exe_path)
         shutil.copy(winxshell_exe_path, gfndesktop_exe_path)
 
         # Rename WinXShell_x64.exe to WinXShell.exe
-        winxshell_dest_path = os.path.join(base_install_directory, 'WinXShell.exe')
+        winxshell_dest_path = os.path.join(winxshell_dir, 'WinXShell.exe')
         os.rename(winxshell_exe_path, winxshell_dest_path)
 
+        # Terminate explorer.exe
+        stop_process_by_name("explorer.exe")
+        stop_process_by_name("gfndesktop.exe")
+        
         # Make a shortcut to copied explorer.exe on the Desktop
         create_shortcut(explorer_exe_path, os.path.join(os.path.expanduser("~"), 'Desktop', 'WinXShell.lnk'))
 
@@ -303,9 +336,12 @@ def install_winxshell(overall_progress_bar):
 
 
 def log_error(caller_name, error):
+    """Log errors."""
     logger.error(f'Unexpected error occurred at {caller_name}: {str(error)}')
 
+
 def download_file_with_progress(url, save_path, overall_progress_bar):
+    """Download a file with progress."""
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
@@ -328,6 +364,7 @@ def download_file_with_progress(url, save_path, overall_progress_bar):
 
 
 def extract_zip(zip_path, extract_path, overall_progress_bar):
+    """Extract a ZIP file."""
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_path)
@@ -337,6 +374,7 @@ def extract_zip(zip_path, extract_path, overall_progress_bar):
 
 
 def install(software, overall_progress_bar):
+    """Install software."""
     if not software["enabled"]:
         return
 
@@ -372,6 +410,7 @@ def install(software, overall_progress_bar):
 
 
 def install_software(overall_progress_bar):
+    """Install all software."""
     try:
         total_software = len(config['default_binaries']) + len(config['custom_binaries']) + 1  # Adding 1 for WinXShell
         overall_progress_bar.total = total_software
@@ -388,6 +427,7 @@ def install_software(overall_progress_bar):
 
 
 def apply_customization(overall_progress_bar):
+    """Apply customization settings."""
     try:
         logger.info(f"Applying customization settings...")
 
