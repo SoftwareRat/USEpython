@@ -15,13 +15,34 @@ logger_name = 'USE.log'
 log_file = os.path.join(os.getenv("TEMP"), logger_name)
 
 # Logging setup
-logging.basicConfig(
-    filename=log_file,
-    level=logging.DEBUG,
-    format='%(levelname)s %(asctime)s %(module)s %(message)s',
-)
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': log_file,
+            'formatter': 'verbose',
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'loggers': {
+        logger_name: {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+        },
+    },
+}
 
+logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(logger_name)
+
 
 class RegistryTypes(Enum):
     DWORD = winreg.REG_DWORD
