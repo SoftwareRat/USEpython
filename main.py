@@ -273,49 +273,54 @@ def create_shortcut(target, shortcut_path):
         log_error(inspect.currentframe().f_code.co_name, e)
 
 def install_winxshell(overall_progress_bar):
-    overall_progress_bar.set_postfix_str("Installing WinXShell...")
+    try:
+        overall_progress_bar.set_postfix_str("Installing WinXShell...")
 
-    # Source directory where WinXShell is already extracted
-    winxshell_dir = os.path.join(base_install_directory, 'WinXShell')
+        # Source directory where WinXShell is already extracted
+        winxshell_dir = os.path.join(base_install_directory, 'WinXShell')
 
-    # Copy all contents of X_PF/WinXShell to the extracted root folder in base_install_directory
-    for root, dirs, files in os.walk(os.path.join(winxshell_dir, 'X_PF', 'WinXShell')):
-        for file in files:
-            src_path = os.path.join(root, file)
-            dst_path = os.path.join(base_install_directory, file)
-            shutil.copy(src_path, dst_path)
+        # Copy all contents of X_PF/WinXShell to the extracted root folder in base_install_directory
+        for root, dirs, files in os.walk(os.path.join(winxshell_dir, 'X_PF', 'WinXShell')):
+            for file in files:
+                src_path = os.path.join(root, file)
+                dst_path = os.path.join(base_install_directory, file)
+                shutil.copy(src_path, dst_path)
 
-    # Delete main.bat in base_install_directory
-    main_bat_path = os.path.join(base_install_directory, 'main.bat')
-    os.remove(main_bat_path)
+        # Delete main.bat in base_install_directory/WinXShell
+        main_bat_path = os.path.join(winxshell_dir, 'main.bat')
+        os.remove(main_bat_path)
 
-    # Delete files with names containing "zh-CN" and "x86" in base_install_directory
-    for root, dirs, files in os.walk(base_install_directory):
-        for file in files:
-            if "zh-CN" in file or "x86" in file:
-                file_path = os.path.join(root, file)
-                os.remove(file_path)
+        # Delete files with names containing "zh-CN" and "x86" in base_install_directory
+        for root, dirs, files in os.walk(base_install_directory):
+            for file in files:
+                if "zh-CN" in file or "x86" in file:
+                    file_path = os.path.join(root, file)
+                    os.remove(file_path)
 
-    # Delete X_PF/WinXShell in base_install_directory
-    shutil.rmtree(os.path.join(base_install_directory, 'X_PF', 'WinXShell'))
+        # Delete X_PF/WinXShell in base_install_directory
+        shutil.rmtree(os.path.join(base_install_directory, 'X_PF', 'WinXShell'))
 
-    # Make 2 copies of WinXShell_x64.exe
-    winxshell_exe_path = os.path.join(base_install_directory, 'WinXShell_x64.exe')
-    explorer_exe_path = os.path.join(base_install_directory, 'explorer.exe')
-    gfndesktop_exe_path = os.path.join(base_install_directory, 'gfndesktop.exe')
+        # Make 2 copies of WinXShell_x64.exe
+        winxshell_exe_path = os.path.join(base_install_directory, 'WinXShell_x64.exe')
+        explorer_exe_path = os.path.join(base_install_directory, 'explorer.exe')
+        gfndesktop_exe_path = os.path.join(base_install_directory, 'gfndesktop.exe')
 
-    shutil.copy(winxshell_exe_path, explorer_exe_path)
-    shutil.copy(winxshell_exe_path, gfndesktop_exe_path)
+        shutil.copy(winxshell_exe_path, explorer_exe_path)
+        shutil.copy(winxshell_exe_path, gfndesktop_exe_path)
 
-    # Rename WinXShell_x64.exe to WinXShell.exe
-    winxshell_dest_path = os.path.join(base_install_directory, 'WinXShell.exe')
-    os.rename(winxshell_exe_path, winxshell_dest_path)
+        # Rename WinXShell_x64.exe to WinXShell.exe
+        winxshell_dest_path = os.path.join(base_install_directory, 'WinXShell.exe')
+        os.rename(winxshell_exe_path, winxshell_dest_path)
 
-    # Make a shortcut to copied explorer.exe on the Desktop
-    create_shortcut(explorer_exe_path, os.path.join(os.path.expanduser("~"), 'Desktop', 'WinXShell.lnk'))
+        # Make a shortcut to copied explorer.exe on the Desktop
+        create_shortcut(explorer_exe_path, os.path.join(os.path.expanduser("~"), 'Desktop', 'WinXShell.lnk'))
 
-    overall_progress_bar.set_postfix_str("WinXShell installed successfully.")
-    overall_progress_bar.update(1)
+        overall_progress_bar.set_postfix_str("WinXShell installed successfully.")
+        overall_progress_bar.update(1)
+    except Exception as e:
+        log_error(inspect.currentframe().f_code.co_name, e)
+        overall_progress_bar.set_postfix_str("Error installing WinXShell.")
+        overall_progress_bar.update(1)
 
 
 def log_error(caller_name, error):
