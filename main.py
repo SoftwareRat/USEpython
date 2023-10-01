@@ -278,12 +278,6 @@ def install_winxshell(overall_progress_bar):
     # Source directory where WinXShell is already extracted
     winxshell_dir = os.path.join(base_install_directory, 'WinXShell')
 
-    # Destination directory within the temporary directory
-    temp_winxshell_dir = os.path.join(base_temp_directory, 'WinXShell')
-
-    # Ensure the destination directory exists
-    create_folder(temp_winxshell_dir)
-
     # Copy all contents of X_PF/WinXShell to the extracted root folder in base_install_directory
     for root, dirs, files in os.walk(os.path.join(winxshell_dir, 'X_PF', 'WinXShell')):
         for file in files:
