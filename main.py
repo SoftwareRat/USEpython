@@ -275,21 +275,54 @@ def create_shortcut(target, shortcut_path):
 def install_winxshell(overall_progress_bar):
     overall_progress_bar.set_postfix_str("Installing WinXShell...")
 
-    # Move files to the appropriate locations
-    winxshell_dir = os.path.join(base_temp_directory, 'WinXShell')
+    # Source directory where WinXShell is already extracted
+    winxshell_dir = os.path.join(base_install_directory, 'WinXShell')
 
-    # Copy files instead of renaming
-    for file in ['WinXShell_x64.exe', 'explorer.exe', 'gfndesktop.exe']:
-        src_path = os.path.join(winxshell_dir, file)
-        dst_path = os.path.join(base_temp_directory, 'WinXShell', file)
-        shutil.copy(src_path, dst_path)
+    # Destination directory within the temporary directory
+    temp_winxshell_dir = os.path.join(base_temp_directory, 'WinXShell')
 
-    # Create a shortcut for WinXShell
-    winxshell_exe = os.path.join(base_temp_directory, 'WinXShell', 'WinXShell_x64.exe')
-    create_shortcut(winxshell_exe, os.path.join(os.path.expanduser("~"), 'Desktop', 'WinXShell.lnk'))
+    # Ensure the destination directory exists
+    create_folder(temp_winxshell_dir)
+
+    # Copy all contents of X_PF/WinXShell to the extracted root folder
+    for root, dirs, files in os.walk(os.path.join(winxshell_dir, 'X_PF', 'WinXShell')):
+        for file in files:
+            src_path = os.path.join(root, file)
+            dst_path = os.path.join(base_temp_directory, file)
+            shutil.copy(src_path, dst_path)
+
+    # Delete main.bat
+    main_bat_path = os.path.join(base_temp_directory, 'main.bat')
+    os.remove(main_bat_path)
+
+    # Delete files with names containing "zh-CN" and "x86"
+    for root, dirs, files in os.walk(base_temp_directory):
+        for file in files:
+            if "zh-CN" in file or "x86" in file:
+                file_path = os.path.join(root, file)
+                os.remove(file_path)
+
+    # Delete X_PF/WinXShell
+    shutil.rmtree(os.path.join(base_temp_directory, 'X_PF', 'WinXShell'))
+
+    # Make 2 copies of WinXShell_x64.exe
+    winxshell_exe_path = os.path.join(base_temp_directory, 'WinXShell_x64.exe')
+    explorer_exe_path = os.path.join(base_temp_directory, 'explorer.exe')
+    gfndesktop_exe_path = os.path.join(base_temp_directory, 'gfndesktop.exe')
+
+    shutil.copy(winxshell_exe_path, explorer_exe_path)
+    shutil.copy(winxshell_exe_path, gfndesktop_exe_path)
+
+    # Rename WinXShell_x64.exe to WinXShell.exe
+    winxshell_dest_path = os.path.join(base_temp_directory, 'WinXShell.exe')
+    os.rename(winxshell_exe_path, winxshell_dest_path)
+
+    # Make a shortcut to copied explorer.exe
+    create_shortcut(explorer_exe_path, os.path.join(os.path.expanduser("~"), 'Desktop', 'WinXShell.lnk'))
 
     overall_progress_bar.set_postfix_str("WinXShell installed successfully.")
     overall_progress_bar.update(1)
+
 
 def log_error(caller_name, error):
     logger.error(f'Unexpected error occurred at {caller_name}: {str(error)}')
