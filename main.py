@@ -62,7 +62,7 @@ def create_shortcut(target, shortcut_path):
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
 base_temp_directory = "C:\\UseTemp"
-base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
+base_install_directory = os.path.join(os.getenv("LOCALAPPDATA"), "Programs")
 create_folder(base_temp_directory, base_install_directory)
 
 def change_wallpaper(image_path):
