@@ -61,7 +61,7 @@ def set_reg_val(key, key_path, val, val_type, new_val):
     caller_name = inspect.stack()[1][3]
     with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
         try:
-            winreg.SetValueEx(sel_key, val, 0, val_type, new_val)
+            winreg.SetValueEx(sel_key, val, 0, val_type.value, new_val)
         except Exception as e:
             log_error(caller_name, e)
 
@@ -347,7 +347,7 @@ def create_progress_bar():
         BarColumn(),
         "[progress.percentage]{task.percentage:>3.1f}%",
         TextColumn("[bold blue]{task.fields[downloaded]}/{task.fields[total]}", justify="right"),
-        DownloadColumn(BarColumn(), "[progress.remaining]{task.fields[remaining_time]}", auto_refresh=True),
+        DownloadColumn(BarColumn(), "[progress.remaining]{task.fields[remaining_time]}"),
     )
 
 def download_file_with_progress(url, save_path, overall_progress_bar, task_description):
