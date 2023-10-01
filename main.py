@@ -11,7 +11,6 @@ import logging
 import psutil
 import shutil
 from enum import Enum
-from rich.progress import Progress, BarColumn, TextColumn, DownloadColumn
 
 logger_name = 'USE.log'
 log_file = os.path.join(os.getenv("TEMP"), logger_name)
@@ -341,34 +340,25 @@ def log_error(caller_name, error):
     logger.error(f'Unexpected error occurred at {caller_name}: {str(error)}')
 
 
-def create_progress_bar():
-    return Progress(
-        "[progress.description]{task.description}",
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.1f}%",
-        TextColumn("[bold blue]{task.fields[downloaded]}/{task.fields[total]}", justify="right"),
-        DownloadColumn(BarColumn(), "[progress.remaining]{task.fields[remaining_time]}", auto_refresh=True),
-    )
-
-def download_file_with_progress(url, save_path, overall_progress_bar, task_description):
+def download_file_with_progress(url, save_path, overall_progress_bar):
+    """Download a file with progress."""
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
         total_size = int(response.headers.get('content-length', 0))
 
-        progress = create_progress_bar()
-        task = progress.add_task(task_description, total=total_size, start=False, downloaded=0)
-
-        with open(save_path, 'wb') as file:
+        with open(save_path, 'wb') as file, tqdm(
+                total=total_size,
+                unit='B',
+                unit_scale=True,
+                unit_divisor=1024,
+                desc=os.path.basename(save_path)
+        ) as progress_bar:
             chunk_size = 1024
             for data in response.iter_content(chunk_size=chunk_size):
                 file.write(data)
-                progress.update(task, advance=len(data), downloaded=progress.tasks[task].completed)
-        
-        progress.stop_task(task)
-
-        overall_progress_bar.update(total_size)
-
+                progress_bar.update(len(data))
+                overall_progress_bar.update(len(data))
     except requests.RequestException as e:
         log_error(inspect.currentframe().f_code.co_name, e)
 
@@ -392,7 +382,7 @@ def install(software, overall_progress_bar):
 
     try:
         if software['url']:
-            download_file_with_progress(software['url'], software['path'], overall_progress_bar, software['name'])
+            download_file_with_progress(software['url'], software['path'], overall_progress_bar)
 
         # Extract ZIP archives to the installation directory
         if software['path'].endswith('.zip'):
@@ -417,6 +407,7 @@ def install(software, overall_progress_bar):
         logger.info(f"{software['name']} installed successfully.")
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
+
 
 def install_software(overall_progress_bar):
     """Install all software."""
