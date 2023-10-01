@@ -6,9 +6,9 @@ import json
 from tqdm import tqdm
 import ctypes
 import winreg
-from enum import Enum
 import logging
 import inspect
+from enum import Enum
 
 logger_name = 'USE.log'
 
@@ -26,17 +26,15 @@ def get_func_name(caller: bool):
 
 def create_folder(*directories):
     for dir in directories:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
+        os.makedirs(dir, exist_ok=True)  # Use exist_ok to avoid checking existence before creating
 
 def set_console_title(title):
     ctypes.windll.kernel32.SetConsoleTitleW(title)
 
 def find_exe(directory, exe_name) -> os.path:
     for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower() == exe_name.lower():
-                return os.path.join(root, file)
+        if exe_name.lower() in (file.lower() for file in files):
+            return os.path.join(root, exe_name)
     return None
 
 class reg_Types(Enum):
@@ -69,10 +67,18 @@ create_folder(base_temp_directory, base_install_directory)
 
 def change_wallpaper(image_path):
     try:
+        if image_path.startswith(("http://", "https://")):
+            # Download image if it's a web link
+            image_data = requests.get(image_path).content
+            image_path = os.path.join(os.getenv("USERPROFILE"), "Pictures", "wallpaper.jpg")
+            with open(image_path, 'wb') as img_file:
+                img_file.write(image_data)
+
         # Set the wallpaper
         ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 3)
         # Notify Windows of the change
         ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 2)
+
         logger.info(f"Desktop wallpaper set to '{image_path}' successfully.")
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
@@ -148,7 +154,8 @@ USE_json = {
     ],
     "customization": [
         {
-            "dark_mode": True
+            "dark_mode": True,
+            "wallpaper_path": "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
         }
     ]
 }
@@ -217,20 +224,47 @@ def install_software(overall_progress_bar):
     total_software = len(config['default_binaries']) + len(config['custom_binaries'])
     overall_progress_bar.total = total_software
     for software in config['default_binaries'] + config['custom_binaries']:
+        logger.info(f"Installing {software['name']}...")
         install(software, overall_progress_bar)
         overall_progress_bar.update(1)
+
+def apply_customization(overall_progress_bar):
+    logger.info(f"Applying customization settings...")
+
+    # Simulating a progress bar for customization
+    overall_progress_bar.set_postfix_str(f"Applying customization settings...")
+    overall_progress_bar.update(1)
+
+    # Your customization logic here
+    customization_options = config.get("customization", [])
+    if customization_options:
+        for option, value in customization_options[0].items():
+            if option == "dark_mode" and value:
+                set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword, 0)
+                logger.info("Dark mode applied successfully.")
+            elif option == "wallpaper_path" and value:
+                # Set the wallpaper
+                change_wallpaper(value)
+                logger.info(f"Wallpaper set to '{value}' successfully.")
+            # Add more conditions for other customization options
+
+    # Simulating the completion of customization
+    overall_progress_bar.set_postfix_str(f"Customization settings applied.")
+    overall_progress_bar.update(1)
+    
+    logger.info(f"Customization settings applied successfully.")
+
+    # Simulating the completion of customization
+    overall_progress_bar.set_postfix_str(f"Customization settings applied.")
+    overall_progress_bar.update(1)
+    
+    logger.info(f"Customization settings applied successfully.")
 
 if __name__ == "__main__":
     overall_progress_bar = tqdm(total=0, unit='B', unit_scale=True, unit_divisor=1024, desc="Overall Progress")
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     try:
         install_software(overall_progress_bar)
+        apply_customization(overall_progress_bar)
     finally:
         overall_progress_bar.close()
-
-    # TEMP: Set Windows 11 default as wallpaper
-    change_wallpaper("C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg")
-
-    # Changing to dark mode
-    if config["customization"]["dark_mode"]:
-        set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword, 0)
