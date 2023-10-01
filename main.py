@@ -361,6 +361,7 @@ def install_winxshell(overall_progress_bar):
 
     overall_progress_bar.set_postfix_str("WinXShell installed successfully.")
     overall_progress_bar.update(1)
+>>>>>>> parent of 1b8fc23 (- WinXShell function fix)
 
 
 def download_file(url, dest_path, chunk_size=128):
