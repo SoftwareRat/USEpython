@@ -1,17 +1,20 @@
 import os
-import requests
-import subprocess
-import zipfile
 import json
-from tqdm import tqdm
+import shutil
+import zipfile
+import time
 import ctypes
 import inspect
-import winreg
+import subprocess
+from tqdm import tqdm
+import requests
 import logging
+import winreg
 import psutil
-import shutil
-from enum import Enum
+from rich.console import Console
 from rich.progress import Progress, BarColumn, TextColumn, DownloadColumn
+from rich.live import Live
+from enum import Enum
 
 logger_name = 'USE.log'
 log_file = os.path.join(os.getenv("TEMP"), logger_name)
@@ -83,6 +86,7 @@ def stop_process_by_name(process_name):
                 print(f"Process {process_name} not found.")
             except psutil.AccessDenied:
                 print(f"Access denied to terminate process {process_name}.")
+
 
 def change_wallpaper(image_path):
     """Change desktop wallpaper."""
@@ -306,179 +310,169 @@ def install_winxshell(overall_progress_bar):
         for root, dirs, files in os.walk(os.path.join(winxshell_dir, 'X_PF', 'WinXShell')):
             for file in files:
                 src_path = os.path.join(root, file)
-                dst_path = os.path.join(base_install_directory, file)
-                shutil.copy(src_path, dst_path)
+                dest_path = os.path.join(base_install_directory, file)
+                shutil.copy2(src_path, dest_path)
 
-        # Make 2 copies of WinXShell_x64.exe
-        winxshell_exe_path = os.path.join(winxshell_dir, 'WinXShell_x64.exe')
-        explorer_exe_path = os.path.join(winxshell_dir, 'explorer.exe')
-        gfndesktop_exe_path = os.path.join(winxshell_dir, 'gfndesktop.exe')
-
-        shutil.copy(winxshell_exe_path, explorer_exe_path)
-        shutil.copy(winxshell_exe_path, gfndesktop_exe_path)
-
-        # Rename WinXShell_x64.exe to WinXShell.exe
-        winxshell_dest_path = os.path.join(winxshell_dir, 'WinXShell.exe')
-        os.rename(winxshell_exe_path, winxshell_dest_path)
-
-        # Terminate explorer.exe
-        stop_process_by_name("explorer.exe")
-        stop_process_by_name("gfndesktop.exe")
-        
-        # Make a shortcut to copied explorer.exe on the Desktop
-        create_shortcut(explorer_exe_path, os.path.join(os.path.expanduser("~"), 'Desktop', 'WinXShell.lnk'))
-
-        overall_progress_bar.set_postfix_str("WinXShell installed successfully.")
-        overall_progress_bar.update(1)
+        logger.info("WinXShell installed successfully.")
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
-        overall_progress_bar.set_postfix_str("Error installing WinXShell.")
-        overall_progress_bar.update(1)
 
 
-def log_error(caller_name, error):
-    """Log errors."""
-    logger.error(f'Unexpected error occurred at {caller_name}: {str(error)}')
-
-
-def create_progress_bar():
-    return Progress(
-        "[progress.description]{task.description}",
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.1f}%",
-        TextColumn("[bold blue]{task.fields[downloaded]}/{task.fields[total]}", justify="right"),
-        DownloadColumn(BarColumn(), "[progress.remaining]{task.fields[remaining_time]}"),
-    )
-
-def download_file_with_progress(url, save_path, overall_progress_bar, task_description):
+def download_file(url, dest_path, chunk_size=128):
+    """Download a file."""
     try:
         response = requests.get(url, stream=True)
-        response.raise_for_status()
         total_size = int(response.headers.get('content-length', 0))
-
-        progress = create_progress_bar()
-        task = progress.add_task(task_description, total=total_size, start=False, downloaded=0)
-
-        with open(save_path, 'wb') as file:
-            chunk_size = 1024
-            for data in response.iter_content(chunk_size=chunk_size):
-                file.write(data)
-                progress.update(task, advance=len(data), downloaded=progress.tasks[task].completed)
-        
-        progress.stop_task(task)
-
-        overall_progress_bar.update(total_size)
-
-    except requests.RequestException as e:
+        block_size = chunk_size
+        wrote = 0
+        with open(dest_path, 'wb') as f, tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024, desc=os.path.basename(dest_path), ncols=100) as bar:
+            for data in response.iter_content(chunk_size=block_size):
+                wrote += len(data)
+                f.write(data)
+                bar.update(len(data))
+        return dest_path
+    except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
 
 
-def extract_zip(zip_path, extract_path, overall_progress_bar):
+def extract_zip(zip_path, extract_path):
     """Extract a ZIP file."""
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_path)
-            overall_progress_bar.update(os.path.getsize(zip_path))
-    except zipfile.BadZipFile as e:
-        log_error(inspect.currentframe().f_code.co_name, e)
-
-
-def install(software, overall_progress_bar):
-    """Install software."""
-    if not software["enabled"]:
-        return
-
-    overall_progress_bar.set_postfix_str(f"Installing {software['name']}...")
-
-    try:
-        if software['url']:
-            download_file_with_progress(software['url'], software['path'], overall_progress_bar, software['name'])
-
-        # Extract ZIP archives to the installation directory
-        if software['path'].endswith('.zip'):
-            extract_dir = os.path.join(base_install_directory, os.path.basename(software['path']).replace('.zip', ''))
-            extract_zip(software['path'], extract_dir, overall_progress_bar)
-
-        # Run installation command
-        if software['install_command']:
-            subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Create shortcut for supported applications
-        if software.get('shortcut', False) and software["enabled"]:
-            exe_path = find_exe(base_install_directory, software['exe_name'])
-            if exe_path:
-                shortcut_name = f"{software['name']}.lnk"
-                shortcut_path = os.path.join(os.path.expanduser("~"), 'Desktop', shortcut_name)
-                create_shortcut(exe_path, shortcut_path)
-                logger.info(f"Shortcut for {software['name']} created successfully.")
-            else:
-                logger.error(f"Executable for {software['name']} not found.")
-
-        logger.info(f"{software['name']} installed successfully.")
-    except Exception as e:
-        log_error(inspect.currentframe().f_code.co_name, e)
-
-def install_software(overall_progress_bar):
-    """Install all software."""
-    try:
-        total_software = len(config['default_binaries']) + len(config['custom_binaries']) + 1  # Adding 1 for WinXShell
-        overall_progress_bar.total = total_software
-
-        # Install WinXShell separately
-        install_winxshell(overall_progress_bar)
-
-        for software in config['default_binaries'] + config['custom_binaries']:
-            logger.info(f"Installing {software['name']}...")
-            install(software, overall_progress_bar)
-            overall_progress_bar.update(1)
+        return extract_path
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
 
 
-def apply_customization(overall_progress_bar):
-    """Apply customization settings."""
+def install_binary(binary_info, overall_progress_bar):
+    """Install a binary."""
     try:
-        logger.info(f"Applying customization settings...")
+        overall_progress_bar.set_postfix_str(f"Installing {binary_info['name']}...")
 
-        # Simulating a progress bar for customization
-        overall_progress_bar.set_postfix_str(f"Applying customization settings...")
-        overall_progress_bar.update(1)
+        if binary_info["url"]:
+            download_path = download_file(binary_info["url"], binary_info["path"])
+            logger.info(f"Downloaded {binary_info['name']} to {download_path}")
 
-        # Your customization logic here
-        customization_options = config.get("customization", [])
-        if customization_options:
-            for option, value in customization_options[0].items():
-                if option == "dark_mode" and value:
-                    set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", RegistryTypes.DWORD, 0)
-                    logger.info("Dark mode applied successfully.")
-                elif option == "dark_mode" and not value:
-                    set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", RegistryTypes.DWORD, 1)
-                    logger.info("Light mode applied successfully.")
-                elif option == "wallpaper_path" and value:
-                    # Set the wallpaper
-                    change_wallpaper(value)
-                    logger.info(f"Wallpaper set to '{value}' successfully.")
-                # Add more conditions for other customization options
+        if binary_info["path"].endswith('.zip'):
+            extract_path = extract_zip(binary_info["path"], os.path.join(base_temp_directory, binary_info["name"]))
+            logger.info(f"Extracted {binary_info['name']} to {extract_path}")
+        else:
+            extract_path = None
 
-        # Simulating the completion of customization
-        overall_progress_bar.set_postfix_str(f"Customization settings applied.")
-        overall_progress_bar.update(1)
+        if binary_info["install_command"]:
+            subprocess.run(binary_info["install_command"], shell=True, check=True, cwd=extract_path)
 
-        logger.info(f"Customization settings applied successfully.")
+        if binary_info["shortcut"]:
+            create_shortcut(find_exe(extract_path or base_install_directory, binary_info["exe_name"]), os.path.join(os.path.join(os.path.join(base_install_directory, binary_info["name"])), f"{binary_info['name']}.lnk"))
+
+        logger.info(f"Installed {binary_info['name']} successfully.")
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
+
+
+def log_error(caller_name, error):
+    """Log errors."""
+    logger.error(f"Error occurred in {caller_name}: {str(error)}")
 
 
 def main():
-    overall_progress_bar = tqdm(total=0, unit='B', unit_scale=True, unit_divisor=1024, desc="Overall Progress")
-    set_console_title("Unauthorized Software Enabler by SoftwareRat")
+    """Main function."""
     try:
-        install_software(overall_progress_bar)
-        apply_customization(overall_progress_bar)
+        set_console_title("Unauthorized Software Enabler by SoftwareRat")
+
+        progress_bar_columns = [
+            BarColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            DownloadColumn(),
+        ]
+
+        overall_progress_bar = Progress(
+            "{task.completed}/{task.total} [{task.percentage:>3.0f}%]",
+            auto_refresh=False,
+            transient=True,
+            console=Console,
+            redirect_stdout=True,
+            redirect_stderr=True,
+            disable=False,
+            refresh_per_second=1,
+            refresh_callback=None,
+            bar_template='{task.completed}/{task.total} [{task.percentage:>3.0f}%] {task.fields[download_bar]}',
+            console_width=80,
+            console_hide_cursor=True,
+            disable_move=False,
+            disable_resize=False,
+            disable_close=False,
+            disable_enter=False,
+            disable_clear=False,
+            disable_backspace=False,
+            disable_close_eof=False,
+            disable_styled_output=False,
+            refresh_fill_char=' ',
+            refresh_empty_char=' ',
+            refresh_iterations=None,
+            transient_per_second=None,
+            transient_iterations=None,
+            transient_percent=None,
+            update_period=None,
+            task_refresh_per_second=1,
+            task_refresh_margin=None,
+            min_width=None,
+            min_delta=None,
+            download_token=None,
+            refresh_spinner=True,
+            progress_bar_width=None,
+            transient_time=None,
+            task_description=None,
+            task_id=None,
+            task_set=None,
+            tasks=None,
+            stats=None,
+            cleanup_on_interrupt=True,
+            unknown=None,
+        )
+
+        # Calculate total tasks
+        total_tasks = len(config["default_binaries"]) + len(config["custom_binaries"]) + len(config["customization"])
+        overall_progress_bar.total = total_tasks
+
+        # Start installing default binaries
+        for binary_info in config["default_binaries"]:
+            if binary_info["enabled"]:
+                install_binary(binary_info, overall_progress_bar)
+                overall_progress_bar.update(advance=1)
+
+        # Start installing custom binaries
+        for binary_info in config["custom_binaries"]:
+            if binary_info["enabled"]:
+                install_binary(binary_info, overall_progress_bar)
+                overall_progress_bar.update(advance=1)
+
+        # Start customizations
+        for customization_info in config["customization"]:
+            if customization_info["dark_mode"]:
+                set_reg_val(winreg.HKEY_CURRENT_USER, 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize', 'AppsUseLightTheme', RegistryTypes.DWORD, 0)
+                set_reg_val(winreg.HKEY_CURRENT_USER, 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize', 'SystemUsesLightTheme', RegistryTypes.DWORD, 0)
+                logger.info("Dark mode enabled.")
+
+            if customization_info["wallpaper_path"]:
+                change_wallpaper(customization_info["wallpaper_path"])
+
+            overall_progress_bar.update(advance=1)
+
+        # Special handling for WinXShell
+        if find_exe(base_install_directory, "WinXShell.exe"):
+            install_winxshell(overall_progress_bar)
+
+        overall_progress_bar.refresh()
+        overall_progress_bar.stop()
+
+        # Close the console after 5 seconds
+        time.sleep(5)
+        subprocess.run("taskkill /F /IM cmd.exe", shell=True, check=False)
+
     except Exception as e:
         log_error(inspect.currentframe().f_code.co_name, e)
-    finally:
-        overall_progress_bar.close()
 
 
 if __name__ == "__main__":
