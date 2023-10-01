@@ -47,7 +47,8 @@ def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
     caller_name = inspect.stack()[1][3]
     with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
         try:
-            winreg.SetValueEx(sel_key, val, 0, val_type, new_val)
+            # Convert val_type to integer before passing it to SetValueEx
+            winreg.SetValueEx(sel_key, val, 0, int(val_type), new_val)
         except Exception as e:
             logger.error(f'Unexpected error occurred at {get_func_name(caller=False)} while being invoked by {get_func_name(caller=True)}: {str(e)}')
 
