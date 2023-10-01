@@ -67,7 +67,7 @@ def set_reg_val(key, key_path, val, val_type, new_val):
 
 
 base_temp_directory = "C:\\UseTemp"
-base_install_directory = "C:\\Users\\kiosk\\AppData\\Local\\Programs"
+base_install_directory = os.path.join(os.getenv("LOCALAPPDATA"), "Programs")
 create_folder(base_temp_directory, base_install_directory)
 
 
