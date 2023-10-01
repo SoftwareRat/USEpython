@@ -9,6 +9,7 @@ import winreg
 import logging
 import inspect
 from enum import Enum
+import comtypes.client
 
 logger_name = 'USE.log'
 
@@ -52,7 +53,7 @@ def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
 
 def create_shortcut(target, shortcut_path):
     try:
-        shell = ctypes.windll.Dispatch("WScript.Shell")
+        shell = comtypes.client.CreateObject("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
         shortcut.TargetPath = target
         shortcut.IconLocation = target
