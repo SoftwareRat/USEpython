@@ -87,7 +87,7 @@ base_temp_directory = "C:\\UseTemp"
 base_install_directory = os.path.join(os.getenv("LOCALAPPDATA"), "Programs")
 create_folders(base_temp_directory, base_install_directory)
 
-def create_software_shortcut(software):
+def create_software_shortcut(software, config):
     if software.get('shortcut', False) is True and software["enabled"]:
         exe_path = find_exe(base_install_directory, software['exe_name'])
         if exe_path:
@@ -223,7 +223,7 @@ def extract_zip(zip_path, extract_path, overall_progress_bar):
         zip_ref.extractall(extract_path)
         overall_progress_bar.update(os.path.getsize(zip_path))
 
-def install(software, overall_progress_bar):
+def install(software, config, overall_progress_bar):
     if not software["enabled"]:
         return
 
@@ -242,19 +242,27 @@ def install(software, overall_progress_bar):
         subprocess.run(software['install_command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Create shortcut for supported applications
-    create_software_shortcut(software)
+    create_software_shortcut(software, config)
 
     logger.info(f"{software['name']} installed successfully.")
 
-def install_software(overall_progress_bar):
+def install_software(config, overall_progress_bar):
     total_software = len(config['default_binaries']) + len(config['custom_binaries'])
     overall_progress_bar.total = total_software
     for software in config['default_binaries'] + config['custom_binaries']:
         logger.info(f"Installing {software['name']}...")
-        install(software, overall_progress_bar)
+        install(software, config, overall_progress_bar)
         overall_progress_bar.update(1)
 
 def apply_customization(overall_progress_bar):
+    logger.info(f"Applying customization settings...")
+
+    # Simulating a progress bar for customization
+    overall_progress_bar.set_postfix_str(f"Applying customization settings...")
+    overall_progress_bar.update(1)
+
+    # Your customization logic here
+def apply_customization(config, overall_progress_bar):
     logger.info(f"Applying customization settings...")
 
     # Simulating a progress bar for customization
@@ -280,7 +288,7 @@ def apply_customization(overall_progress_bar):
     # Simulating the completion of customization
     overall_progress_bar.set_postfix_str(f"Customization settings applied.")
     overall_progress_bar.update(1)
-    
+
     logger.info(f"Customization settings applied successfully.")
 
     # Simulating the completion of customization
