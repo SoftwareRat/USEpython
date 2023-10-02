@@ -9,7 +9,10 @@ import winreg
 import logging
 import inspect
 from enum import Enum
+import comtypes
+import comtypes.shelllink
 import comtypes.client
+import comtypes.persist
 
 # Setup logger
 logger_name = 'USE.log'
@@ -69,16 +72,17 @@ def set_reg_val(key: winreg, key_path: str, val: str, val_type, new_val):
 
 def create_shortcut(target, shortcut_path):
     try:
-        shell = comtypes.client.CreateObject("WScript.Shell")
-        shortcut = shell.CreateShortCut(shortcut_path)
+        # Create ShellLink object
+        shortcut = comtypes.client.CreateObject(comtypes.shelllink.ShellLink)
+        shortcut_w = shortcut.QueryInterface(comtypes.shelllink.IShellLinkW)
 
-        # Set the properties individually
-        shortcut.TargetPath = target
-        shortcut.IconLocation = target
+        # Set the properties
+        shortcut_w.SetPath(target)
 
         # Save the shortcut
-        persistence = shortcut.QueryInterface(comtypes.shelllink.IPersistFile)
-        persistence.Save(shortcut_path, 0)
+        shortcut_file = shortcut.QueryInterface(comtypes.persist.IPersistFile)
+        shortcut_file.Save(shortcut_path, True)
+
         logger.info(f"Shortcut created successfully at {shortcut_path}.")
     except Exception as e:
         logger.error(f'Unexpected error occurred at {get_caller_name(caller=False)} while being invoked by {get_caller_name(caller=True)}: {str(e)}')
