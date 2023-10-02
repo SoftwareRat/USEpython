@@ -270,9 +270,11 @@ def apply_customization(config, overall_progress_bar):
         for option, value in customization_options[0].items():
             if option == "dark_mode" and value:
                 set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword.value, 0)
+                set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", reg_Types.dword.value, 0)
                 logger.info("Dark mode applied successfully.")
             elif option == "dark_mode" and not value:
                 set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", reg_Types.dword.value, 1)
+                set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", reg_Types.dword.value, 1)
                 logger.info("Light mode applied successfully.")
             elif option == "wallpaper_path" and value:
                 # Set the wallpaper
