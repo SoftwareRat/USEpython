@@ -67,7 +67,7 @@ def set_reg_val(key: winreg.HKEYType, key_path: str, val: str, val_type: int, ne
         with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as sel_key:
             winreg.SetValueEx(sel_key, val, 0, val_type, new_val)
     except Exception as e:
-            logger.error(f'Unexpected error occurred at {get_caller_name(caller=False)} while being invoked by {get_caller_name(caller=True)}: {str(e)}')
+        logger.error(f'Unexpected error occurred at {get_caller_name(caller=False)} while being invoked by {get_caller_name(caller=True)}: {str(e)}')
 
 def create_shortcut(target, shortcut_path):
     try:
