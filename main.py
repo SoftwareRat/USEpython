@@ -254,14 +254,6 @@ def install_software(config, overall_progress_bar):
         install(software, config, overall_progress_bar)
         overall_progress_bar.update(1)
 
-def apply_customization(overall_progress_bar):
-    logger.info(f"Applying customization settings...")
-
-    # Simulating a progress bar for customization
-    overall_progress_bar.set_postfix_str(f"Applying customization settings...")
-    overall_progress_bar.update(1)
-
-    # Your customization logic here
 def apply_customization(config, overall_progress_bar):
     logger.info(f"Applying customization settings...")
 
@@ -291,19 +283,13 @@ def apply_customization(config, overall_progress_bar):
 
     logger.info(f"Customization settings applied successfully.")
 
-    # Simulating the completion of customization
-    overall_progress_bar.set_postfix_str(f"Customization settings applied.")
-    overall_progress_bar.update(1)
-    
-    logger.info(f"Customization settings applied successfully.")
-
 def main():
     overall_progress_bar = tqdm(total=0, unit='B', unit_scale=True, unit_divisor=1024, desc="Overall Progress")
     set_console_title("Unauthorized Software Enabler by SoftwareRat")
     try:
         config = read_config()
-        install_software(overall_progress_bar)
-        apply_customization(overall_progress_bar)
+        install_software(config, overall_progress_bar)
+        apply_customization(config, overall_progress_bar)
     finally:
         overall_progress_bar.close()
 
