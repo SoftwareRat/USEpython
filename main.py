@@ -27,17 +27,10 @@ def download_metadata(url):
 
 def download_file(url, destination):
     try:
-        response = requests.get(url, stream=True)
+        response = requests.get(url)
         response.raise_for_status()
-
-        # Extract the file name from the URL
-        parsed_url = urlparse(url)
-        file_name = os.path.basename(parsed_url.path)
-
-        with open(os.path.join(destination, file_name), 'wb') as file:
-            for chunk in response.iter_content(chunk_size=128):
-                file.write(chunk)
-
+        with open(destination, 'wb') as file:
+            file.write(response.content)
         return True
     except requests.RequestException as e:
         logging.error(f"Error downloading file: {e}")
