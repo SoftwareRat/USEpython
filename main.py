@@ -106,8 +106,8 @@ def set_reg_val(key: winreg.HKEYType, key_path: str, val: str, val_type: int, ne
 
 def enable_dark_mode():
     try:
-        set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", winreg.REG_DWORD.value, 0)
-        set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", winreg.REG_DWORD.value, 0)
+        set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", winreg.REG_DWORD, 0)
+        set_reg_val(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", winreg.REG_DWORD, 0)
         return True
     except Exception as e:
         logging.error(f"Error enabling dark mode: {e}")
@@ -154,7 +154,11 @@ def load_user_settings(metadata):
                 handle_user_settings(user_settings)
 
         except json.JSONDecodeError:
-            print("Error loading user settings from config file.")
+            print("Error loading user settings from config file. Using default settings.")
+            # Set default wallpaper path if not provided in USE_config.json
+            for software in metadata:
+                if "WallpaperPath" not in software:
+                    software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
     else:
         print("Config file not found. Using default settings.")
         # Set default wallpaper path if not provided in USE_config.json
@@ -166,7 +170,7 @@ def replace_placeholders(arguments, localappdata):
     return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
 
 def main():
-    metadata_url = "http://gfnhack.me/use_software_metadata.json"
+    metadata_url = "https://gfnhack.me/use_software_metadata.json"
     metadata = download_metadata(metadata_url)
     if metadata is None:
         print("Error downloading software metadata. Please check your internet connection.")

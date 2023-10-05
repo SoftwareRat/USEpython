@@ -1,26 +1,39 @@
 {
-  "WallpaperPath": "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg",
-  "DarkMode": true,
-  "DefaultSoftwareSettings": [
-    {
-      "Name": "Notepad++",
-      "Enabled": true,
-      "CreateShortcut": false
-    },
-    {
-      "Name": "Firefox",
-      "Enabled": true,
-      "CreateShortcut": true
-    }
-  ],
-  "CustomSoftwareMetadata": [
-    {
-      "Name": "Example Software",
-      "FileURL": "https://example/software.exe",
-      "Arguments": [],
-      "Enabled": false,
-      "CreateShortcut": false,
-      "Executable": "example.exe"
-    }
-  ]
+    "WallpaperPath": "https://w.wallhaven.cc/full/pk/wallhaven-pkmm89.jpg",
+    "DarkMode": true,
+    "DefaultSoftwareSettings": [
+        {
+            "Name": "VLC media player",
+            "Enabled": false,
+            "CreateShortcut": false
+        },
+        {
+            "Name": "Firefox",
+            "Enabled": true,
+            "CreateShortcut": true
+        },
+        {
+            "Name": "mpv.net",
+            "Enabled": true,
+            "CreateShortcut": true
+        }
+    ],
+    "CustomSoftwareMetadata": [
+        {
+            "Name": "Example Software",
+            "FileURL": "https://example/software.exe",
+            "Arguments": [],
+            "Enabled": false,
+            "CreateShortcut": false,
+            "Executable": "example.exe"
+        },
+        {
+            "Name": "Thunderbird",
+            "FileURL": "https://download-installer.cdn.mozilla.net/pub/thunderbird/releases/115.3.1/win64/en-US/Thunderbird%20Setup%20115.3.1.exe",
+            "Arguments": ["/InstallDirectoryPath={{LOCALAPPDATA}}\\Programs\\Thunderbird"],
+            "Enabled": true,
+            "CreateShortcut": true,
+            "Executable": "thunderbird.exe"
+        }
+    ]
 }
