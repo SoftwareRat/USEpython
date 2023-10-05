@@ -1,0 +1,26 @@
+{
+  "WallpaperPath": "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg",
+  "DarkMode": true,
+  "DefaultSoftwareSettings": [
+    {
+      "Name": "Notepad++",
+      "Enabled": true,
+      "CreateShortcut": false
+    },
+    {
+      "Name": "Firefox",
+      "Enabled": true,
+      "CreateShortcut": true
+    }
+  ],
+  "CustomSoftwareMetadata": [
+    {
+      "Name": "Example Software",
+      "FileURL": "https://example/software.exe",
+      "Arguments": [],
+      "Enabled": false,
+      "CreateShortcut": false,
+      "Executable": "example.exe"
+    }
+  ]
+}
