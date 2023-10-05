@@ -30,12 +30,9 @@ def download_file(url, destination):
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
-        # Extract the file name from the Content-Disposition header
-        content_disposition = response.headers.get('Content-Disposition')
-        if content_disposition and 'filename' in content_disposition:
-            file_name = content_disposition.split('filename=')[1].strip('"').replace('\\', '_')
-        else:
-            file_name = os.path.basename(urlparse(url).path)
+        # Extract the file name from the URL
+        parsed_url = urlparse(url)
+        file_name = os.path.basename(parsed_url.path)
 
         with open(os.path.join(destination, file_name), 'wb') as file:
             for chunk in response.iter_content(chunk_size=128):
