@@ -10,6 +10,7 @@ import comtypes
 import comtypes.shelllink
 import comtypes.client
 import comtypes.persist
+from urllib.parse import urlparse
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
@@ -150,6 +151,8 @@ def load_user_settings(metadata):
             if "WallpaperPath" not in software:
                 software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
 
+def replace_placeholders(arguments, localappdata):
+    return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
 
 
 def main():
@@ -164,13 +167,14 @@ def main():
     for software in metadata:
         if software.get("Enabled", True):
             file_url = software["FileURL"]
-            file_name = os.path.basename(file_url)
+            file_name = os.path.basename(urlparse(file_url).path)
             temp_path = os.path.join(os.environ["TEMP"], file_name)
             install_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", software["Name"])
 
             if download_file(file_url, temp_path):
                 if file_name.endswith(".exe"):
-                    if install_exe(temp_path, software.get("Arguments", [])):
+                    custom_arguments = replace_placeholders(software.get("Arguments", []), os.environ["LOCALAPPDATA"])
+                    if install_exe(temp_path, custom_arguments):
                         print(f"Software {software['Name']} installed successfully.")
                     else:
                         print(f"Error installing software {software['Name']}.")
