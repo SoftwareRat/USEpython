@@ -133,21 +133,23 @@ def handle_user_settings(settings):
 def load_user_settings(metadata):
     config_file_path = os.path.join(os.getcwd(), "USE_config.json")
     if os.path.exists(config_file_path):
-        with open(config_file_path, "r") as config_file:
-            try:
+        try:
+            with open(config_file_path, "r") as config_file:
                 user_settings = json.load(config_file)
                 for software in metadata:
                     software_name = software["Name"]
                     if software_name in user_settings:
                         software["Enabled"] = user_settings[software_name].get("Enabled", True)
                         software["CreateShortcut"] = user_settings[software_name].get("CreateShortcut", False)
-            except json.JSONDecodeError:
-                print("Error loading user settings from config file.")
+        except json.JSONDecodeError:
+            print("Error loading user settings from config file.")
     else:
         print("Config file not found. Using default settings.")
         # Set default wallpaper path if not provided in USE_config.json
-        if "WallpaperPath" not in user_settings:
-            user_settings["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
+        for software in metadata:
+            if "WallpaperPath" not in software:
+                software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
+
 
 
 def main():
