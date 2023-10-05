@@ -113,6 +113,7 @@ def enable_dark_mode():
         logging.error(f"Error enabling dark mode: {e}")
         return False
 
+
 def handle_user_settings(settings):
     if "WallpaperPath" in settings:
         wallpaper_path = settings["WallpaperPath"]
@@ -137,11 +138,21 @@ def load_user_settings(metadata):
         try:
             with open(config_file_path, "r") as config_file:
                 user_settings = json.load(config_file)
-                for software in metadata:
-                    software_name = software["Name"]
-                    if software_name in user_settings:
-                        software["Enabled"] = user_settings[software_name].get("Enabled", True)
-                        software["CreateShortcut"] = user_settings[software_name].get("CreateShortcut", False)
+
+                # Update default settings with user-specific settings
+                for default_setting in user_settings.get("DefaultSoftwareSettings", []):
+                    software_name = default_setting["Name"]
+                    matching_software = next((s for s in metadata if s["Name"] == software_name), None)
+                    if matching_software:
+                        matching_software["Enabled"] = default_setting.get("Enabled", True)
+                        matching_software["CreateShortcut"] = default_setting.get("CreateShortcut", False)
+
+                # Add custom software metadata
+                metadata.extend(user_settings.get("CustomSoftwareMetadata", []))
+
+                # Handle user-specific settings
+                handle_user_settings(user_settings)
+
         except json.JSONDecodeError:
             print("Error loading user settings from config file.")
     else:
@@ -153,7 +164,6 @@ def load_user_settings(metadata):
 
 def replace_placeholders(arguments, localappdata):
     return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
-
 
 def main():
     metadata_url = "http://gfnhack.me/use_software_metadata.json"
