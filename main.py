@@ -13,6 +13,7 @@ import comtypes.client
 import comtypes.persist
 from urllib.parse import urlparse
 from colorama import Fore, Style
+import shutil
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
@@ -132,6 +133,34 @@ def enable_dark_mode():
         logging.error(f"Error enabling dark mode: {e}")
         return False
 
+def post_winxshell(install_path):
+    try:
+        # Remove all files including "zh-CN"
+        for root, dirs, files in os.walk(install_path):
+            for file in files:
+                if 'zh-CN' in file:
+                    os.remove(os.path.join(root, file))
+        # Remove wallpaper.jpg
+        wallpaper_path = os.path.join(install_path, 'wallpaper.jpg')
+        if os.path.exists(wallpaper_path):
+            os.remove(wallpaper_path)
+        # Remove WinXShell_x86.exe
+        x86_path = os.path.join(install_path, 'WinXShell_x86.exe')
+        if os.path.exists(x86_path):
+            os.remove(x86_path)
+        # Rename WinXShell_x64.exe to WinXShell.exe
+        x64_path = os.path.join(install_path, 'WinXShell_x64.exe')
+        new_path = os.path.join(install_path, 'WinXShell.exe')
+        os.rename(x64_path, new_path)
+        # Make a copy of WinXShell.exe to explorer.exe
+        explorer_path = os.path.join(install_path, 'explorer.exe')
+        shutil.copy(new_path, explorer_path)
+        # Terminate any existing Explorer processes currently running
+        subprocess.run(['taskkill', '/F', '/IM', 'explorer.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Start explorer.exe located on %LOCALAPPDATA%\Programs\WinXShell
+        subprocess.Popen([explorer_path])
+    except Exception as e:
+        logging.error(f"Error in post_winxshell: {e}")
 
 def handle_user_settings(settings):
     if "WallpaperPath" in settings:
@@ -224,8 +253,9 @@ def main():
                             print(f"Shortcut created for software {software['Name']}.")
                         else:
                             print(f"Error creating shortcut for software {software['Name']}.")
-                    else:
-                        print(f"Executable not found for software {software['Name']}.")
+
+    # Post-installation steps for WinXShell
+    post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
 
 if __name__ == "__main__":
     main()
