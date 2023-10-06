@@ -25,7 +25,7 @@ jobs:
         pip install pyinstaller
     - name: Build EXE
       run: |
-        pyinstaller --specpath ./dist use.ico main.py
+        pyinstaller --specpath ./dist --icon use.ico main.py
 
     - name: Upload EXE
       uses: actions/upload-artifact@v3
