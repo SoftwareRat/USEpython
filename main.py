@@ -1,4 +1,5 @@
 import requests
+import sys
 import os
 import subprocess
 import zipfile
@@ -11,26 +12,44 @@ import comtypes.shelllink
 import comtypes.client
 import comtypes.persist
 from urllib.parse import urlparse
+from colorama import Fore, Style
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
 
+# Colorama initialization
+if sys.platform.lower() == 'win32':
+    os.system('color')
+
+def print_color(text, color=Fore.WHITE, style=Style.NORMAL):
+    print(f"{style}{color}{text}{Style.RESET_ALL}")
+
 def download_metadata(url):
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
+        response.raise_for_status()
         metadata = response.json()
         return metadata
     except requests.RequestException as e:
         logging.error(f"Error downloading metadata: {e}")
+        input()
         return None
 
 def download_file(url, destination):
     try:
-        response = requests.get(url)
+        response = requests.get(url, stream=True)
         response.raise_for_status()
+        total_size = int(response.headers.get('content-length', 0))
+        block_size = 1024  # 1 Kibibyte
+        downloaded_size = 0
         with open(destination, 'wb') as file:
-            file.write(response.content)
+            print_color(f"Downloading: {os.path.basename(destination)}", Fore.CYAN, Style.BRIGHT)
+            for data in response.iter_content(block_size):
+                file.write(data)
+                downloaded_size += len(data)
+                progress = min(50, int(50 * downloaded_size / total_size))
+                print_color(f"[{'=' * progress}{' ' * (50 - progress)}] {downloaded_size}/{total_size} bytes", Fore.GREEN, Style.BRIGHT, end='\r')
+        print()
         return True
     except requests.RequestException as e:
         logging.error(f"Error downloading file: {e}")
@@ -130,8 +149,6 @@ def handle_user_settings(settings):
             else:
                 print("Error enabling dark mode.")
 
-    # Add more code here to handle other user settings
-
 def load_user_settings(metadata):
     config_file_path = os.path.join(os.getcwd(), "USE_config.json")
     if os.path.exists(config_file_path):
@@ -174,6 +191,7 @@ def main():
     metadata = download_metadata(metadata_url)
     if metadata is None:
         print("Error downloading software metadata. Please check your internet connection.")
+        input()
         return
 
     load_user_settings(metadata)
