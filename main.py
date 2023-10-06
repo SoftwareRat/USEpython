@@ -253,7 +253,7 @@ def main():
             install_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", software["Name"])
 
             # Displaying "Installing" with the software name
-            print_color(f"Installing: {software['Name']}", Fore.CYAN, Style.BRIGHT)
+            print_color(f"Installing {software['Name']}", Fore.CYAN, Style.BRIGHT)
 
             if download_file(file_url, temp_path):
                 if file_name.endswith(".exe"):
