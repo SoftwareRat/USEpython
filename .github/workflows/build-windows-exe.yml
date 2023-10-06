@@ -24,9 +24,13 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
+    - name: Create dist directory
+      run: mkdir dist
+
     - name: Copy icon to the dist folder
       run: |
         copy use.ico dist
+
     - name: Build EXE
       run: |
         pyinstaller --specpath dist --icon use.ico main.py
