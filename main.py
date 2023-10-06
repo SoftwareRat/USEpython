@@ -21,8 +21,8 @@ logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
 if sys.platform.lower() == 'win32':
     os.system('color')
 
-def print_color(text, color=Fore.WHITE, style=Style.NORMAL):
-    print(f"{style}{color}{text}{Style.RESET_ALL}")
+def print_color(text, color=Fore.WHITE, style=Style.NORMAL, end='\n'):
+    print(f"{style}{color}{text}{Style.RESET_ALL}", end=end)
 
 def download_metadata(url):
     try:
@@ -49,7 +49,7 @@ def download_file(url, destination):
                 downloaded_size += len(data)
                 progress = min(50, int(50 * downloaded_size / total_size))
                 print_color(f"[{'=' * progress}{' ' * (50 - progress)}] {downloaded_size}/{total_size} bytes", Fore.GREEN, Style.BRIGHT, end='\r')
-        print()
+        print()  # Move to the next line after the progress bar
         return True
     except requests.RequestException as e:
         logging.error(f"Error downloading file: {e}")
