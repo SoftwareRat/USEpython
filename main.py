@@ -12,18 +12,30 @@ import comtypes.shelllink
 import comtypes.client
 import comtypes.persist
 from urllib.parse import urlparse
-from colorama import Fore, Style
+from colorama import Fore, Style, init
 import shutil
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
 
 # Colorama initialization
+init(autoreset=True)
 if sys.platform.lower() == 'win32':
     os.system('color')
 
 def print_color(text, color=Fore.WHITE, style=Style.NORMAL, end='\n'):
     print(f"{style}{color}{text}{Style.RESET_ALL}", end=end)
+
+def print_ascii_art():
+    ascii_art = """
+██╗   ██╗███████╗███████╗
+██║   ██║██╔════╝██╔════╝
+██║   ██║███████╗█████╗  
+██║   ██║╚════██║██╔══╝  
+╚██████╔╝███████║███████╗
+ ╚═════╝ ╚══════╝╚══════╝
+"""
+    print_color(ascii_art, Fore.RED, Style.BRIGHT)
 
 def download_metadata(url):
     try:
@@ -36,6 +48,10 @@ def download_metadata(url):
         input()
         return None
 
+def set_console_title(title):
+    if sys.platform.lower() == 'win32':
+        ctypes.windll.kernel32.SetConsoleTitleW(title)
+
 def download_file(url, destination):
     try:
         response = requests.get(url, stream=True)
@@ -44,7 +60,6 @@ def download_file(url, destination):
         block_size = 1024  # 1 Kibibyte
         downloaded_size = 0
         with open(destination, 'wb') as file:
-            print_color(f"Downloading: {os.path.basename(destination)}", Fore.CYAN, Style.BRIGHT)
             for data in response.iter_content(block_size):
                 file.write(data)
                 downloaded_size += len(data)
@@ -216,6 +231,11 @@ def replace_placeholders(arguments, localappdata):
     return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
 
 def main():
+    # Set console title
+    set_console_title("Unauthorized Software Enabler")
+
+    # Display ASCII art
+    print_ascii_art()
     metadata_url = "https://gfnhack.me/use_software_metadata.json"
     metadata = download_metadata(metadata_url)
     if metadata is None:
@@ -231,6 +251,9 @@ def main():
             file_name = os.path.basename(urlparse(file_url).path)
             temp_path = os.path.join(os.environ["TEMP"], file_name)
             install_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", software["Name"])
+
+            # Displaying "Installing" with the software name
+            print_color(f"Installing: {software['Name']}", Fore.CYAN, Style.BRIGHT)
 
             if download_file(file_url, temp_path):
                 if file_name.endswith(".exe"):
