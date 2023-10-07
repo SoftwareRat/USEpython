@@ -65,7 +65,7 @@ def download_file(url, destination):
                 file.write(data)
                 downloaded_size += len(data)
                 progress = min(50, int(50 * downloaded_size / total_size))
-                print_color(f"[{'=' * progress}{' ' * (50 - progress)}] {downloaded_size}/{total_size} bytes", Fore.GREEN, Style.BRIGHT, end='\r')
+                print_color(f"[{'=' * progress}{' ' * (50 - progress)}] {downloaded_size}/{total_size} bytes", Fore.BLUE, Style.BRIGHT, end='\r')
         print()  # Move to the next line after the progress bar
         return True
     except requests.RequestException as e:
@@ -151,6 +151,7 @@ def enable_dark_mode():
 
 def post_winxshell(install_path):
     try:
+        print_color("Performing post-installation steps for WinXShell...", Fore.CYAN, Style.BRIGHT)
         # Remove all files including "zh-CN"
         for root, dirs, files in os.walk(install_path):
             for file in files:
@@ -175,6 +176,7 @@ def post_winxshell(install_path):
         subprocess.run(['taskkill', '/F', '/IM', 'explorer.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Start explorer.exe located on %LOCALAPPDATA%\Programs\WinXShell
         subprocess.Popen([explorer_path])
+        print_color("WinXShell post-installation steps completed successfully.", Fore.GREEN, Style.BRIGHT, '✅')
     except Exception as e:
         logging.error(f"Error in post_winxshell: {e}")
 
@@ -182,17 +184,17 @@ def handle_user_settings(settings):
     if "WallpaperPath" in settings:
         wallpaper_path = settings["WallpaperPath"]
         if set_wallpaper(wallpaper_path):
-            print_color("Wallpaper set successfully.", Fore.GREEN, Style.BRIGHT)
+            print_color("Wallpaper set successfully.", Fore.GREEN, Style.BRIGHT, '✅')
         else:
-            print_color("ERROR: Error setting wallpaper.", Fore.RED, Style.BRIGHT)
+            print_color("ERROR: Error setting wallpaper.", Fore.RED, Style.BRIGHT, '❌')
 
     if "DarkMode" in settings:
         dark_mode_enabled = settings["DarkMode"]
         if dark_mode_enabled:
             if enable_dark_mode():
-                print_color("Dark mode enabled successfully.", Fore.GREEN, Style.BRIGHT)
+                print_color("Dark mode enabled successfully.", Fore.GREEN, Style.BRIGHT, '✅')
             else:
-                print_color("ERROR: Error enabling dark mode.", Fore.RED, Style.BRIGHT)
+                print_color("ERROR: Error enabling dark mode.", Fore.RED, Style.BRIGHT, '❌')
 
 def load_user_settings(metadata):
     config_file_path = os.path.join(os.getcwd(), "USE_config.json")
@@ -216,13 +218,13 @@ def load_user_settings(metadata):
                 handle_user_settings(user_settings)
 
         except json.JSONDecodeError:
-            print_color("ERROR: Error parsing config file. Using default settings.", Fore.RED, Style.BRIGHT)
+            print_color("ERROR: Error parsing config file. Using default settings.", Fore.RED, Style.BRIGHT, '❌')
             # Set default wallpaper path if not provided in USE_config.json
             for software in metadata:
                 if "WallpaperPath" not in software:
                     software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
     else:
-        print_color("WARNING: Config file not found. Using default settings.", Fore.YELLOW, Style.BRIGHT)
+        print_color("WARNING: Config file not found. Using default settings.", Fore.YELLOW, Style.BRIGHT, '⚠️')
         # Set default wallpaper path if not provided in USE_config.json
         for software in metadata:
             if "WallpaperPath" not in software:
@@ -233,14 +235,14 @@ def replace_placeholders(arguments, localappdata):
 
 def main():
     # Set console title
-    set_console_title("Unauthorized Software Enabler")
+    set_console_title("Unauthorized Software Enabler - SoftwareRat")
 
     # Display ASCII art
     print_ascii_art()
     metadata_url = "https://gfnhack.me/use_software_metadata.json"
     metadata = download_metadata(metadata_url)
     if metadata is None:
-        print_color("ERROR: Error downloading metadata. Press any key to exit.", Fore.RED, Style.BRIGHT)
+        print_color("ERROR: Error downloading metadata. Press any key to exit.", Fore.RED, Style.BRIGHT, '❌')
         input()
         return
 
@@ -265,18 +267,18 @@ def main():
                         print_color(f"ERROR: Error installing {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
                 elif file_name.endswith(".zip"):
                     if extract_zip(temp_path, install_path):
-                        print_color(f"{software['Name']} installed successfully.", Fore.GREEN, Style.BRIGHT)
+                        print_color(f"{software['Name']} installed successfully.", Fore.GREEN, Style.BRIGHT, '✅')
                     else:
-                        print_color(f"ERROR: Error installing {software['Name']}.", Fore.RED, Style.BRIGHT)
+                        print_color(f"ERROR: Error installing {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
 
                 if software.get("CreateShortcut", False):
                     executable_path = find_executable(install_path, software.get("Executable", ""))
                     if executable_path:
                         shortcut_name = f"{software['Name']}.lnk"
                         if create_shortcut(executable_path, os.path.join(os.path.expanduser('~'), 'Desktop', shortcut_name)):
-                            print_color(f"Shortcut created successfully for {software['Name']}.", Fore.GREEN, Style.BRIGHT)
+                            print_color(f"Shortcut created successfully for {software['Name']}.", Fore.GREEN, Style.BRIGHT, '✅')
                         else:
-                            print_color(f"ERROR: Error creating shortcut for {software['Name']}.", Fore.RED, Style.BRIGHT)
+                            print_color(f"ERROR: Error creating shortcut for {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
 
     # Post-installation steps for WinXShell
     post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
