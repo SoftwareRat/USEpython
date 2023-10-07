@@ -23,8 +23,9 @@ init(autoreset=True)
 if sys.platform.lower() == 'win32':
     os.system('color')
 
-def print_color(text, color=Fore.WHITE, style=Style.NORMAL, end='\n'):
-    print(f"{style}{color}{text}{Style.RESET_ALL}", end=end)
+def print_color(text, color=Fore.WHITE, style=Style.NORMAL, emoji='', end='\n'):
+    emoji_str = f"{emoji} " if emoji else ''
+    print(f"{style}{color}{emoji_str}{text}{Style.RESET_ALL}", end=end)
 
 def print_ascii_art():
     ascii_art = """
@@ -181,17 +182,17 @@ def handle_user_settings(settings):
     if "WallpaperPath" in settings:
         wallpaper_path = settings["WallpaperPath"]
         if set_wallpaper(wallpaper_path):
-            print("Wallpaper set successfully.")
+            print_color("Wallpaper set successfully.", Fore.GREEN, Style.BRIGHT)
         else:
-            print("Error setting wallpaper.")
+            print_color("ERROR: Error setting wallpaper.", Fore.RED, Style.BRIGHT)
 
     if "DarkMode" in settings:
         dark_mode_enabled = settings["DarkMode"]
         if dark_mode_enabled:
             if enable_dark_mode():
-                print("Dark mode enabled successfully.")
+                print_color("Dark mode enabled successfully.", Fore.GREEN, Style.BRIGHT)
             else:
-                print("Error enabling dark mode.")
+                print_color("ERROR: Error enabling dark mode.", Fore.RED, Style.BRIGHT)
 
 def load_user_settings(metadata):
     config_file_path = os.path.join(os.getcwd(), "USE_config.json")
@@ -215,13 +216,13 @@ def load_user_settings(metadata):
                 handle_user_settings(user_settings)
 
         except json.JSONDecodeError:
-            print("Error loading user settings from config file. Using default settings.")
+            print_color("ERROR: Error parsing config file. Using default settings.", Fore.RED, Style.BRIGHT)
             # Set default wallpaper path if not provided in USE_config.json
             for software in metadata:
                 if "WallpaperPath" not in software:
                     software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
     else:
-        print("Config file not found. Using default settings.")
+        print_color("WARNING: Config file not found. Using default settings.", Fore.YELLOW, Style.BRIGHT)
         # Set default wallpaper path if not provided in USE_config.json
         for software in metadata:
             if "WallpaperPath" not in software:
@@ -239,7 +240,7 @@ def main():
     metadata_url = "https://gfnhack.me/use_software_metadata.json"
     metadata = download_metadata(metadata_url)
     if metadata is None:
-        print("Error downloading software metadata. Please check your internet connection.")
+        print_color("ERROR: Error downloading metadata. Press any key to exit.", Fore.RED, Style.BRIGHT)
         input()
         return
 
@@ -259,23 +260,23 @@ def main():
                 if file_name.endswith(".exe"):
                     custom_arguments = replace_placeholders(software.get("Arguments", []), os.environ["LOCALAPPDATA"])
                     if install_exe(temp_path, custom_arguments):
-                        print(f"Software {software['Name']} installed successfully.")
+                        print_color(f"{software['Name']} installed successfully.", Fore.GREEN, Style.BRIGHT, '✅')
                     else:
-                        print(f"Error installing software {software['Name']}.")
+                        print_color(f"ERROR: Error installing {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
                 elif file_name.endswith(".zip"):
                     if extract_zip(temp_path, install_path):
-                        print(f"Software {software['Name']} installed successfully.")
+                        print_color(f"{software['Name']} installed successfully.", Fore.GREEN, Style.BRIGHT)
                     else:
-                        print(f"Error installing software {software['Name']}.")
+                        print_color(f"ERROR: Error installing {software['Name']}.", Fore.RED, Style.BRIGHT)
 
                 if software.get("CreateShortcut", False):
                     executable_path = find_executable(install_path, software.get("Executable", ""))
                     if executable_path:
                         shortcut_name = f"{software['Name']}.lnk"
                         if create_shortcut(executable_path, os.path.join(os.path.expanduser('~'), 'Desktop', shortcut_name)):
-                            print(f"Shortcut created for software {software['Name']}.")
+                            print_color(f"Shortcut created successfully for {software['Name']}.", Fore.GREEN, Style.BRIGHT)
                         else:
-                            print(f"Error creating shortcut for software {software['Name']}.")
+                            print_color(f"ERROR: Error creating shortcut for {software['Name']}.", Fore.RED, Style.BRIGHT)
 
     # Post-installation steps for WinXShell
     post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
