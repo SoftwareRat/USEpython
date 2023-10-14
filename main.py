@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from colorama import Fore, Style, init
 import shutil
 import webbrowser
+import ipaddress
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
@@ -109,18 +110,39 @@ def open_short_link(short_link):
     except Exception as e:
         logging.error(f"Error opening short link in the browser: {e}")
 
-def verify_key():
+def is_in_allowed_range(client_ip, allowed_ip_ranges):
+    try:
+        client_ip = ipaddress.IPv4Address(client_ip)
+        for ip_range in allowed_ip_ranges:
+            if client_ip in ipaddress.IPv4Network(ip_range, strict=False):
+                return True
+        return False
+    except ipaddress.AddressValueError:
+        logging.error("Invalid IP address format.")
+        return False
+
+def verify_key(allowed_ip_ranges):
     while True:
         try:
             key = input("Enter the key: ")
+            
+            # Make a GET request to check if the key is valid
             response = requests.get(f"https://redirect-api.work.ink/tokenValid/{key}")
             response.raise_for_status()
             data = response.json()
+
+            # Check if the key is valid and if the client's IP is in the allowed range
             if data.get('valid', False):
-                print_color("USE successfully activated.", Fore.GREEN, Style.BRIGHT, '✅')
-                return True
+                client_ip = requests.get('https://api64.ipify.org?format=json').json().get('ip', '')
+                if is_in_allowed_range(client_ip, allowed_ip_ranges):
+                    print_color("USE successfully activated.", Fore.GREEN, Style.BRIGHT, '✅')
+                    return True
+                else:
+                    print_color("ERROR: IP not in the allowed range. Terminating script.", Fore.RED, Style.BRIGHT, '❌')
+                    sys.exit("IP not in the allowed range. Terminating script.")
             else:
                 print_color("The entered key is invalid. Please try again.", Fore.RED, Style.BRIGHT, '❌')
+
         except requests.RequestException as e:
             logging.error(f"Error verifying key: {e}")
             print_color("An error occurred while verifying the key. Please try again.", Fore.RED, Style.BRIGHT, '❌')
@@ -257,12 +279,25 @@ def load_user_settings(metadata):
 def replace_placeholders(arguments, localappdata):
     return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
 
+def fetch_ip_ranges():
+    try:
+        response = requests.get('https://ipranges.nvidiangn.net/v1/ips')
+        response.raise_for_status()
+        return response.json().get('ipList', [])
+    except requests.RequestException as e:
+        logging.error('Error fetching IP ranges:', e)
+        return []
+
 def main():
     open_short_link("https://work.ink/1RAk/USE")
+    # Fetch allowed IP ranges
+    allowed_ip_ranges = fetch_ip_ranges()
+
     # Set console title
     set_console_title("Unauthorized Software Enabler - SoftwareRat")
 
-    if not verify_key():
+    # Verify key and check IP range
+    if not verify_key(allowed_ip_ranges):
         return
     
     # Display ASCII art
