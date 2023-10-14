@@ -9,7 +9,6 @@
         },
         {
             "Name": "Firefox",
-            "Enabled": true,
             "CreateShortcut": true
         },
         {

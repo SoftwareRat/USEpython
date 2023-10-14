@@ -14,6 +14,7 @@ import comtypes.persist
 from urllib.parse import urlparse
 from colorama import Fore, Style, init
 import shutil
+import webbrowser
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
@@ -100,6 +101,29 @@ def create_shortcut(target, shortcut_path):
     except Exception as e:
         logging.error(f"Error creating shortcut: {e}")
         return False
+
+def open_short_link(short_link):
+    try:
+        webbrowser.open_new_tab(short_link)
+        print_color(f"Opening the short link in the browser: {short_link}", Fore.CYAN, Style.BRIGHT)
+    except Exception as e:
+        logging.error(f"Error opening short link in the browser: {e}")
+
+def verify_key():
+    while True:
+        try:
+            key = input("Enter the key: ")
+            response = requests.get(f"https://redirect-api.work.ink/tokenValid/{key}")
+            response.raise_for_status()
+            data = response.json()
+            if data.get('valid', False):
+                print_color("USE successfully activated.", Fore.GREEN, Style.BRIGHT, '✅')
+                return True
+            else:
+                print_color("The entered key is invalid. Please try again.", Fore.RED, Style.BRIGHT, '❌')
+        except requests.RequestException as e:
+            logging.error(f"Error verifying key: {e}")
+            print_color("An error occurred while verifying the key. Please try again.", Fore.RED, Style.BRIGHT, '❌')
 
 def download_image(image_path):
     try:
@@ -234,9 +258,13 @@ def replace_placeholders(arguments, localappdata):
     return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
 
 def main():
+    open_short_link("https://work.ink/1RAk/USE")
     # Set console title
     set_console_title("Unauthorized Software Enabler - SoftwareRat")
 
+    if not verify_key():
+        return
+    
     # Display ASCII art
     print_ascii_art()
     metadata_url = "https://gfnhack.me/use_software_metadata.json"
