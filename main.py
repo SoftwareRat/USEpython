@@ -310,6 +310,7 @@ def main():
 
     # Post-installation steps for WinXShell
     post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
-
+    # Display a warning message box
+    ctypes.windll.user32.MessageBoxW(None, "Warning: Minimizing windows will kill this session with a GciPlugin rule violation (0x8003001F). Complaints regarding this will be ignored and closed without comment.", "WARNING: Before you continue", 0x30)
 if __name__ == "__main__":
     main()
