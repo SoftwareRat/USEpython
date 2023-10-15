@@ -39,24 +39,39 @@ jobs:
         script-name: main.py
         onefile: true
 
-    - name: Upload EXE
-      uses: actions/upload-artifact@v3
+    - name: Upload EXE to Repository
+      uses: actions/upload-artifact@v2
       with:
-        name: exe
+        name: USE
         path: build/main.exe
     
     - name: Create a ZIP archive
       shell: powershell
       run: Compress-Archive -Path build/main.exe -DestinationPath USE.zip
 
-    - name: Upload USE automatically to webserver
-      uses: dmnemec/copy_file_to_another_repo_action@main
-      env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+    # Checkout the repository again to push changes to a different repository
+    - name: Checkout USEwebsite repository
+      uses: actions/checkout@v4
       with:
-        source_file: 'main.zip'
-        destination_repo: 'SoftwareRat/USEwebsite'
-        destination_folder: 'Gajim'
-        user_email: '40393784+SoftwareRat@users.noreply.github.com'
-        user_name: 'SoftwareRat'
-        commit_message: 'Updating USE automatically done by GitHub Actions'
+        repository: SoftwareRat/USEwebsite
+        ref: main
+        path: USEwebsite
+
+    # Add the USE.zip file to the Gajim folder
+    - name: Add USE.zip to Gajim folder
+      run: |
+        cd USEwebsite
+        copy ../USE.zip Gajim/
+        git add Gajim/USE.zip
+
+    # Commit the changes
+    - name: Commit changes
+      run: |
+        cd USEwebsite
+        git commit -m "Add USE.zip to Gajim folder"
+
+    # Push changes to the repository
+    - name: Push changes
+      run: git push origin main
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }} # Add your personal access token as a secret
