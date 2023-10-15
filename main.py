@@ -223,11 +223,13 @@ def post_winxshell(install_path):
         shutil.copy(new_path, explorer_path)
         # Terminate any existing Explorer processes currently running
         subprocess.run(['taskkill', '/F', '/IM', 'explorer.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(['taskkill', '/F', '/IM', 'gfndesktop.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Start explorer.exe located on %LOCALAPPDATA%\Programs\WinXShell
         subprocess.Popen([explorer_path])
         # Start Classic Shell with xml
         classic_shell_path = os.path.join(os.environ["ProgramFiles"], "Classic Shell", "ClassicStartMenu.exe")
         classic_shell_xml_path = os.path.join(install_path, "menusettings.xml")
+        subprocess.Popen([classic_shell_path])
         subprocess.Popen([classic_shell_path, "-xml", classic_shell_xml_path])
         print_color("WinXShell post-installation steps completed successfully.", Fore.GREEN, Style.BRIGHT, '✅')
     except Exception as e:
@@ -301,7 +303,7 @@ def main():
     allowed_ip_ranges = fetch_ip_ranges()
 
     # Set console title
-    set_console_title(f"Unauthorized Software Enabler {VERSION} - SoftwareRat")
+    set_console_title(f"Unauthorized Software Enabler ({VERSION}) - SoftwareRat")
 
     # Verify key and check IP range
     if not verify_key(allowed_ip_ranges):

@@ -38,6 +38,7 @@ jobs:
         nuitka-version: main
         script-name: main.py
         onefile: true
+        windows-icon-from-ico: use.ico
 
     - name: Upload EXE to Repository
       uses: actions/upload-artifact@v3
