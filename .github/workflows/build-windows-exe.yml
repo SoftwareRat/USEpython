@@ -40,7 +40,7 @@ jobs:
         onefile: true
 
     - name: Upload EXE to Repository
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: USE
         path: build/main.exe
