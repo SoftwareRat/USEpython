@@ -201,30 +201,11 @@ def enable_dark_mode():
 def post_winxshell(install_path):
     try:
         print_color("Performing post-installation steps for WinXShell...", Fore.CYAN, Style.BRIGHT)
-        # Remove all files including "zh-CN"
-        for root, dirs, files in os.walk(install_path):
-            for file in files:
-                if 'zh-CN' in file:
-                    os.remove(os.path.join(root, file))
-        # Remove wallpaper.jpg
-        wallpaper_path = os.path.join(install_path, 'wallpaper.jpg')
-        if os.path.exists(wallpaper_path):
-            os.remove(wallpaper_path)
-        # Remove WinXShell_x86.exe
-        x86_path = os.path.join(install_path, 'WinXShell_x86.exe')
-        if os.path.exists(x86_path):
-            os.remove(x86_path)
-        # Rename WinXShell_x64.exe to WinXShell.exe
-        x64_path = os.path.join(install_path, 'WinXShell_x64.exe')
-        new_path = os.path.join(install_path, 'WinXShell.exe')
-        os.rename(x64_path, new_path)
-        # Make a copy of WinXShell.exe to explorer.exe
-        explorer_path = os.path.join(install_path, 'explorer.exe')
-        shutil.copy(new_path, explorer_path)
         # Terminate any existing Explorer processes currently running
         subprocess.run(['taskkill', '/F', '/IM', 'explorer.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         subprocess.run(['taskkill', '/F', '/IM', 'gfndesktop.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Start explorer.exe located on %LOCALAPPDATA%\Programs\WinXShell
+        explorer_path = os.path.join(install_path, 'explorer.exe')
         subprocess.Popen([explorer_path])
         # Start Classic Shell with xml
         classic_shell_path = os.path.join(os.environ["ProgramFiles"], "Classic Shell", "ClassicStartMenu.exe")
