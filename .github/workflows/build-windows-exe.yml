@@ -44,3 +44,19 @@ jobs:
       with:
         name: exe
         path: build/main.exe
+    
+    - name: Create a ZIP archive
+      shell: powershell
+      run: Compress-Archive -Path build/main.exe -DestinationPath USE.zip
+
+    - name: Upload USE automatically to webserver
+      uses: dmnemec/copy_file_to_another_repo_action@main
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+      with:
+        source_file: 'main.zip'
+        destination_repo: 'SoftwareRat/USEwebsite'
+        destination_folder: 'Gajim'
+        user_email: '40393784+SoftwareRat@users.noreply.github.com'
+        user_name: 'SoftwareRat'
+        commit_message: 'Updating USE automatically done by GitHub Actions'

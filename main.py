@@ -17,6 +17,9 @@ import shutil
 import webbrowser
 import ipaddress
 
+# Set the version number
+VERSION = "1.0"
+
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
 
@@ -222,6 +225,10 @@ def post_winxshell(install_path):
         subprocess.run(['taskkill', '/F', '/IM', 'explorer.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Start explorer.exe located on %LOCALAPPDATA%\Programs\WinXShell
         subprocess.Popen([explorer_path])
+        # Start Classic Shell with xml
+        classic_shell_path = os.path.join(os.environ["ProgramFiles"], "Classic Shell", "ClassicStartMenu.exe")
+        classic_shell_xml_path = os.path.join(install_path, "menusettings.xml")
+        subprocess.Popen([classic_shell_path, "-xml", classic_shell_xml_path])
         print_color("WinXShell post-installation steps completed successfully.", Fore.GREEN, Style.BRIGHT, '✅')
     except Exception as e:
         logging.error(f"Error in post_winxshell: {e}")
@@ -294,7 +301,7 @@ def main():
     allowed_ip_ranges = fetch_ip_ranges()
 
     # Set console title
-    set_console_title("Unauthorized Software Enabler - SoftwareRat")
+    set_console_title(f"Unauthorized Software Enabler {VERSION} - SoftwareRat")
 
     # Verify key and check IP range
     if not verify_key(allowed_ip_ranges):
@@ -345,7 +352,13 @@ def main():
 
     # Post-installation steps for WinXShell
     post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
+    # Starting antiUAD
+    antiuad_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", "antiUAD", "antiUAD.exe")
+    try:
+        subprocess.Popen([antiuad_path])
+    except Exception as e:
+        print(f"Error starting antiUAD: {e}")
     # Display a warning message box
-    ctypes.windll.user32.MessageBoxW(None, "Warning: Minimizing windows will kill this session with a GciPlugin rule violation (0x8003001F). Complaints regarding this will be ignored and closed without comment.", "WARNING: Before you continue", 0x30)
+    ctypes.windll.user32.MessageBoxW(None, "Warning: Minimizing windows will kill this session with a GciPlugin rule violation (0x8003001F). DO NOT MINIMIZE WINDOWS! Complaints regarding this will be ignored and closed without comment.", "WARNING: Before you continue", 0x30)
 if __name__ == "__main__":
     main()
