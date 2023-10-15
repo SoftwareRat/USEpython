@@ -56,6 +56,8 @@ jobs:
         repository: SoftwareRat/USEwebsite
         ref: main
         path: USEwebsite
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }} # Add your personal access token as a secret
 
     # Add the USE.zip file to the Gajim folder
     - name: Add USE.zip to Gajim folder
