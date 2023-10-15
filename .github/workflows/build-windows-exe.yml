@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build Windows EXE and Upload to USEwebsite
 
 on:
   push:
@@ -44,36 +44,3 @@ jobs:
       with:
         name: USE
         path: build/main.exe
-    
-    - name: Create a ZIP archive
-      shell: powershell
-      run: Compress-Archive -Path build/main.exe -DestinationPath USE.zip
-
-    # Checkout the repository again to push changes to a different repository
-    - name: Checkout USEwebsite repository
-      uses: actions/checkout@v4
-      with:
-        repository: SoftwareRat/USEwebsite
-        ref: main
-        path: USEwebsite
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }} # Add your personal access token as a secret
-
-    # Add the USE.zip file to the Gajim folder
-    - name: Add USE.zip to Gajim folder
-      run: |
-        cd USEwebsite
-        copy ../USE.zip Gajim/
-        git add Gajim/USE.zip
-
-    # Commit the changes
-    - name: Commit changes
-      run: |
-        cd USEwebsite
-        git commit -m "Add USE.zip to Gajim folder"
-
-    # Push changes to the repository
-    - name: Push changes
-      run: git push origin main
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }} # Add your personal access token as a secret
