@@ -7,18 +7,22 @@ import ctypes
 import json
 import winreg
 import logging
+from rich.console import Console
+from rich.progress import Progress
 import comtypes
 import comtypes.shelllink
 import comtypes.client
 import comtypes.persist
 from urllib.parse import urlparse
 from colorama import Fore, Style, init
-import shutil
 import webbrowser
 import ipaddress
+import hashlib
 
 # Set the version number
-VERSION = "1.0"
+VERSION = "1.5"
+# Set debug mode, only for development
+DEBUG = True
 
 # Set up logging
 logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
@@ -58,24 +62,42 @@ def set_console_title(title):
     if sys.platform.lower() == 'win32':
         ctypes.windll.kernel32.SetConsoleTitleW(title)
 
-def download_file(url, destination):
-    try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-        total_size = int(response.headers.get('content-length', 0))
-        block_size = 1024  # 1 Kibibyte
-        downloaded_size = 0
-        with open(destination, 'wb') as file:
-            for data in response.iter_content(block_size):
-                file.write(data)
-                downloaded_size += len(data)
-                progress = min(50, int(50 * downloaded_size / total_size))
-                print_color(f"[{'=' * progress}{' ' * (50 - progress)}] {downloaded_size}/{total_size} bytes", Fore.BLUE, Style.BRIGHT, end='\r')
-        print()  # Move to the next line after the progress bar
-        return True
-    except requests.RequestException as e:
-        logging.error(f"Error downloading file: {e}")
-        return False
+def calculate_sha256(file_path):
+    sha256 = hashlib.sha256()
+    with open(file_path, 'rb') as file:
+        for chunk in iter(lambda: file.read(4096), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+def verify_sha256(file_path, expected_sha256):
+    actual_sha256 = calculate_sha256(file_path)
+    return actual_sha256 == expected_sha256
+
+def download_file(url, destination, max_retries=1):
+    for retry in range(max_retries + 1):
+        try:
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            total_size = int(response.headers.get('content-length', 0))
+            
+            console = Console()
+            with Progress() as progress:
+                task = progress.add_task("[rainbow]Downloading...", total=total_size)
+                
+                with open(destination, 'wb') as file:
+                    for data in response.iter_content(chunk_size=1024):
+                        file.write(data)
+                        progress.update(task, advance=len(data))
+            
+            print()  # Move to the next line after the progress bar
+            return True
+        except requests.RequestException as e:
+            logging.error(f"Error downloading file: {e}")
+            if retry < max_retries:
+                print_color(f"Retrying download ({retry + 1}/{max_retries + 1}) for {url}", Fore.YELLOW, Style.BRIGHT)
+            else:
+                print_color(f"Max retries reached. Failed to download {url}.", Fore.RED, Style.BRIGHT, '❌')
+                return False
 
 def install_exe(file_path, arguments):
     try:
@@ -266,8 +288,8 @@ def load_user_settings(metadata):
             if "WallpaperPath" not in software:
                 software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
 
-def replace_placeholders(arguments, localappdata):
-    return [arg.replace('{{LOCALAPPDATA}}', localappdata) for arg in arguments]
+def replace_placeholders(arguments):
+    return [arg.replace('{{LOCALAPPDATA}}', os.environ["LOCALAPPDATA"]) for arg in arguments]
 
 def fetch_ip_ranges():
     try:
@@ -279,15 +301,18 @@ def fetch_ip_ranges():
         return []
 
 def main():
-    open_short_link("https://work.ink/1RAk/USE")
     # Fetch allowed IP ranges
     allowed_ip_ranges = fetch_ip_ranges()
 
     # Set console title
-    set_console_title(f"Unauthorized Software Enabler ({VERSION}) - SoftwareRat")
+    if DEBUG:
+        set_console_title(f"DEBUG: Unauthorized Software Enabler ({VERSION}) - SoftwareRat")
+    else:
+        set_console_title(f"Unauthorized Software Enabler ({VERSION}) - SoftwareRat")
 
     # Verify key and check IP range
-    if not verify_key(allowed_ip_ranges):
+    if not DEBUG and not verify_key(allowed_ip_ranges):
+        open_short_link("https://work.ink/1RAk/USE")
         return
     
     # Display ASCII art
@@ -305,15 +330,21 @@ def main():
         if software.get("Enabled", True):
             file_url = software["FileURL"]
             file_name = os.path.basename(urlparse(file_url).path)
-            temp_path = os.path.join(os.environ["TEMP"], file_name)
+            temp_path = os.path.join(os.environ["TEMP"], "USE", file_name)
             install_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", software["Name"])
-
-            # Displaying "Installing" with the software name
             print_color(f"Installing {software['Name']}", Fore.CYAN, Style.BRIGHT)
 
-            if download_file(file_url, temp_path):
+            if download_file(file_url, temp_path, max_retries=1):
+                # Check hash integrity
+                if DEBUG and software["SHA256"] == "<SKIP>":
+                    print_color(f"Skipping SHA256 check for {software['Name']}", Fore.YELLOW, Style.BRIGHT)
+                elif verify_sha256(temp_path, software["SHA256"]):
+                    print_color(f"Integrity verified for {software['Name']}", Fore.GREEN, Style.BRIGHT, '✅')
+                else:
+                    print_color(f"ERROR: SHA256 verification failed for {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
+                    continue
                 if file_name.endswith(".exe"):
-                    custom_arguments = replace_placeholders(software.get("Arguments", []), os.environ["LOCALAPPDATA"])
+                    custom_arguments = replace_placeholders(software.get("Arguments", []))
                     if install_exe(temp_path, custom_arguments):
                         print_color(f"{software['Name']} installed successfully.", Fore.GREEN, Style.BRIGHT, '✅')
                     else:
@@ -334,13 +365,17 @@ def main():
                             print_color(f"ERROR: Error creating shortcut for {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
 
     # Post-installation steps for WinXShell
-    post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
-    # Starting antiUAD
-    antiuad_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", "antiUAD", "antiUAD.exe")
-    try:
-        subprocess.Popen([antiuad_path])
-    except Exception as e:
-        print(f"Error starting antiUAD: {e}")
+    for software in metadata:
+        if software.get("Name") == "WinXShell" and software.get("Enabled", True):
+            post_winxshell(os.path.join(os.environ["LOCALAPPDATA"], "Programs", "WinXShell"))
+        if software.get("Name") == "antiUAD" and software.get("Enabled", True):
+            # Starting antiUAD
+            antiuad_path = os.path.join(os.environ["LOCALAPPDATA"], "Programs", "antiUAD", "antiUAD.exe")
+            try:
+                subprocess.Popen([antiuad_path])
+            except Exception as e:
+                print(f"Error starting antiUAD: {e}")
+
     # Display a warning message box
     ctypes.windll.user32.MessageBoxW(None, "Warning: Minimizing windows will kill this session with a GciPlugin rule violation (0x8003001F). DO NOT MINIMIZE WINDOWS! Complaints regarding this will be ignored and closed without comment.", "WARNING: Before you continue", 0x30)
 if __name__ == "__main__":
