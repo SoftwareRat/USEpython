@@ -8,6 +8,8 @@ import json
 import winreg
 import logging
 from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 from rich.progress import Progress
 import comtypes
 import comtypes.shelllink
@@ -18,6 +20,8 @@ from colorama import Fore, Style, init
 import webbrowser
 import ipaddress
 import hashlib
+import msvcrt
+import time
 
 # Set the version number
 VERSION = "1.5"
@@ -31,6 +35,8 @@ logging.basicConfig(filename='install_log.txt', level=logging.DEBUG)
 init(autoreset=True)
 if sys.platform.lower() == 'win32':
     os.system('color')
+console = Console()
+
 
 def print_color(text, color=Fore.WHITE, style=Style.NORMAL, emoji='', end='\n'):
     emoji_str = f"{emoji} " if emoji else ''
@@ -80,7 +86,6 @@ def download_file(url, destination, max_retries=1):
             response.raise_for_status()
             total_size = int(response.headers.get('content-length', 0))
             
-            console = Console()
             with Progress() as progress:
                 task = progress.add_task("[rainbow]Downloading...", total=total_size)
                 
@@ -268,6 +273,7 @@ def load_user_settings(metadata):
                     if matching_software:
                         matching_software["Enabled"] = default_setting.get("Enabled", True)
                         matching_software["CreateShortcut"] = default_setting.get("CreateShortcut", False)
+                        matching_software["ShowInTaskbar"] = default_setting.get("ShowInTaskbar", False)
 
                 # Add custom software metadata
                 metadata.extend(user_settings.get("CustomSoftwareMetadata", []))
@@ -287,6 +293,28 @@ def load_user_settings(metadata):
         for software in metadata:
             if "WallpaperPath" not in software:
                 software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
+
+    # Give user 3 seconds to skip JSON
+    message = Text.from_markup(
+        "Press [bold]S[/bold] to skip loading user settings from JSON...",
+        justify="center",
+    )
+
+    panel = Panel(message, title="User Settings", style="bold magenta")
+
+    console.print(panel)
+
+    for i in range(3, 0, -1):
+        message = Text.from_markup(f"{i}...", justify="center")
+        console.print(message)
+        time.sleep(1)
+        if msvcrt.kbhit() and msvcrt.getch().decode().lower() == "s":
+            message = Text.from_markup("Skipping loading user settings from JSON.", justify="center")
+            console.print(message)
+            break
+    # Load user settings from JSON
+    print("Loading user settings from JSON...")
+    handle_user_settings(user_settings)
 
 def replace_placeholders(arguments):
     return [arg.replace('{{LOCALAPPDATA}}', os.environ["LOCALAPPDATA"]) for arg in arguments]
@@ -363,6 +391,16 @@ def main():
                             print_color(f"Shortcut created successfully for {software['Name']}.", Fore.GREEN, Style.BRIGHT, '✅')
                         else:
                             print_color(f"ERROR: Error creating shortcut for {software['Name']}.", Fore.RED, Style.BRIGHT, '❌')
+                
+                if software.get("ShowInTaskbar", False):
+                    executable_path = find_executable(install_path, software.get("Executable", ""))
+                    if executable_path:
+                        shortcut_name = f"{software['Name']}.lnk"
+                        if create_shortcut(executable_path, os.path.join(os.environ["APPDATA"], "Microsoft", "Internet Explorer", "Quick Launch", "User Pinned", "TaskBar", shortcut_name)):
+                            print_color(f"Added {software['Name']} to the taskbar.", Fore.GREEN, Style.BRIGHT, '✅')
+                        else:
+                            print_color(f"ERROR: Error adding {software['Name']} to the taskbar.", Fore.RED, Style.BRIGHT, '❌')
+
 
     # Post-installation steps for WinXShell
     for software in metadata:
