@@ -278,21 +278,18 @@ def load_user_settings(metadata):
                 # Add custom software metadata
                 metadata.extend(user_settings.get("CustomSoftwareMetadata", []))
 
-                # Handle user-specific settings
-                handle_user_settings(user_settings)
-
         except json.JSONDecodeError:
             print_color("ERROR: Error parsing config file. Using default settings.", Fore.RED, Style.BRIGHT, '❌')
             # Set default wallpaper path if not provided in USE_config.json
             for software in metadata:
                 if "WallpaperPath" not in software:
-                    software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
+                    software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img19.jpg"
     else:
         print_color("WARNING: Config file not found. Using default settings.", Fore.YELLOW, Style.BRIGHT, '⚠️')
         # Set default wallpaper path if not provided in USE_config.json
         for software in metadata:
             if "WallpaperPath" not in software:
-                software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg"
+                software["WallpaperPath"] = "C:\\Windows\\Web\\Wallpaper\\Windows\\img19.jpg"
 
     # Give user 3 seconds to skip JSON
     message = Text.from_markup(
@@ -306,11 +303,10 @@ def load_user_settings(metadata):
 
     for i in range(3, 0, -1):
         message = Text.from_markup(f"{i}...", justify="center")
-        console.print(message)
+        console.print(message, end='\r')
         time.sleep(1)
         if msvcrt.kbhit() and msvcrt.getch().decode().lower() == "s":
-            message = Text.from_markup("Skipping loading user settings from JSON.", justify="center")
-            console.print(message)
+            print_color("WARNING: Config file not found. Using default settings.", Fore.YELLOW, Style.BRIGHT, '⚠️')
             break
     # Load user settings from JSON
     print("Loading user settings from JSON...")
@@ -342,6 +338,8 @@ def main():
     if not DEBUG and not verify_key(allowed_ip_ranges):
         open_short_link("https://work.ink/1RAk/USE")
         return
+    else:
+        print_color("DEBUG: Key verification skipped.", Fore.YELLOW, Style.BRIGHT, '⚠️')
     
     # Display ASCII art
     print_ascii_art()
