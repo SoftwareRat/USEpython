@@ -1,0 +1,150 @@
+[
+    {
+        "Name": "7-Zip",
+        "FileURL": "https://7-zip.org/a/7z2301-x64.exe",
+        "Arguments": ["/S", "/D={{INSTALL_PATH}}\\Programs\\7-Zip"],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "7zFM.exe",   
+        "SHA256": "26CB6E9F56333682122FAFE79DBCDFD51E9F47CC7217DCCD29AC6FC33B5598CD"
+    },
+    {
+        "Name": "Mozilla Firefox",
+        "FileURL": "https://download-installer.cdn.mozilla.net/pub/firefox/releases/120.0.1/win64/en-US/Firefox%20Setup%20120.0.1.exe",
+        "Arguments": ["/InstallDirectoryPath={{INSTALL_PATH}}\\Programs\\Firefox"],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "firefox.exe",
+        "SHA256": "1E1529E747F81DF311F02096FA95FB4850EB04BDBA86901056B2A06360E164E1"
+    },
+    {
+        "Name": "Thorium",
+        "FileURL": "https://github.com/Alex313031/Thorium-Win/releases/download/M117.0.5938.157/Thorium_117.0.5938.157.zip",
+        "Arguments": [],
+        "Enabled": false,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "Thorium.exe",
+        "SHA256": "0447F68D007180959F976468CF82E1089F3077699970E19094F7C9150411477A"
+    },
+    {
+        "Name": "Process Explorer",
+        "FileURL": "https://download.sysinternals.com/files/ProcessExplorer.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "procexp64.exe",
+        "SHA256": "<SKIP>"
+    },
+    {
+        "Name": "Notepad++",
+        "FileURL": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.5.7/npp.8.5.7.portable.x64.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "notepad++.exe",
+        "SHA256": "745F4A1F2E25B67E5A6847B0DE6C78AC49A478A1F6C6CE556B931BF70BE8E4A0"
+    },
+    {
+        "Name": "VLC media player",
+        "FileURL": "https://get.videolan.org/vlc/3.0.18/win64/vlc-3.0.18-win64.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": false,
+        "Executable": "vlc.exe",
+        "SHA256": "0447F68D007180959F976468CF82E1089F3077699970E19094F7C9150411477A"
+    },
+    {
+        "Name": "Explorer++",
+        "FileURL": "https://download.explorerplusplus.com/beta/1.4.0-beta-2/explorerpp_x64.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": false,
+        "Executable": "Explorer++.exe",
+        "SHA256": "3E37A3B1E39C38F135F0E97041CF8674A803FB4C0380C9A53ABB5F8B495EA372"
+    },
+    {
+        "Name": "Regcool",
+        "FileURL": "https://kurtzimmermann.com/files/RegCoolX64.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": true,
+        "ShowInTaskbar": false,
+        "Executable": "RegCool.exe",
+        "SHA256": "<SKIP>"
+    },
+    {
+        "Name": "Blender",
+        "FileURL": "https://www.blender.org/download/release/Blender3.6/blender-3.6.4-windows-x64.zip",
+        "Arguments": [],
+        "Enabled": false,
+        "CreateShortcut": false,
+        "Executable": "blender.exe",
+        "SHA256": "D98BE675C9C23FA638B3917D402B297D17623209069B79FBE50A5BE28847138C"
+    },
+    {
+        "Name": "PowerShell",
+        "FileURL": "https://github.com/PowerShell/PowerShell/releases/download/v7.3.7/PowerShell-7.3.7-win-x64.zip",
+        "Arguments": [],
+        "Enabled": false,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "pwsh.exe",
+        "SHA256": "1C2988794A454C01990BCA872BB208590EC792189C115DBE0D71880EBCF760A6"
+    },
+    {
+        "Name": "Kdenlive",
+        "FileURL": "https://binary-factory.kde.org/view/Windows%20MingW/job/Kdenlive_Stable_mingw64/1228/artifact/kdenlive-23.08.1-1228-windows-gcc-x86_64.exe",
+        "Arguments": [],
+        "Enabled": false,
+        "CreateShortcut": false,
+        "Executable": "kdenlive.exe",
+        "SHA256": "83B4769E17D01E6E469511D778CB5A60641FA88DEDD67714C7CAF85C915774C5"
+    },
+    {
+        "Name": "WinXShell",
+        "FileURL": "https://files.rycoh.net/WinXShell.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": false,
+        "ShowInTaskbar": false,
+        "Executable": "explorer.exe",
+        "SHA256": "<SKIP>"
+    },
+    {
+        "Name": "antiUAD",
+        "FileURL": "https://files.rycoh.net/USE/antiUAD.zip",
+        "Arguments": [],
+        "Enabled": true,
+        "CreateShortcut": false,
+        "ShowInTaskbar": false,
+        "Executable": "antiUAD.exe",
+        "SHA256": "<SKIP>"
+    },
+    {
+        "Name": "Roblox",
+        "FileURL": "https://setup.rbxcdn.com/RobloxPlayerLauncher.exe",
+        "Arguments": ["-install", "-silent"],
+        "Enabled": false,
+        "CreateShortcut": false,
+        "ShowInTaskbar": true,
+        "Executable": "RobloxPlayerLauncher.exe",
+        "SHA256": "<SKIP>"
+    },
+    {
+        "Name": "Discord",
+        "FileURL": "https://dl.discordapp.net/distro/app/stable/win/x86/1.0.9018/DiscordSetup.exe",
+        "Arguments": [],
+        "Enabled": false,
+        "CreateShortcut": true,
+        "ShowInTaskbar": true,
+        "Executable": "Discord.exe",
+        "SHA256": "A26FE36A4B882284B26B44E85B3C1B4D8B9F587F294ABAB24E4623EFBC9A95A4"
+    }
+]
